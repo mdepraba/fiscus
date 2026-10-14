@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+# pen.dev and Figma design files are binary
+*.pen binary
+*.fig binary

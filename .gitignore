@@ -1,0 +1,24 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies and build output, once code arrives
+node_modules
+dist
+out-tsc
+coverage
+
+# Claude Code
+.claude/settings.local.json
+.claude/worktrees
+.skill-archive/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Nx
+.nx/cache
+.nx/workspace-data
+tmp

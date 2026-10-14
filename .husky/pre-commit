@@ -1,0 +1,1 @@
+bun x biome check --staged --no-errors-on-unmatched

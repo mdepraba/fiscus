@@ -1,0 +1,55 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+Fiscus is a private personal finance app for one owner. The app, the project
+and the code are all called Fiscus (`fiscus` in code).
+
+The Nx workspace is set up (Bun, TypeScript, Biome, Husky, commitlint, CI),
+but it holds **no projects yet**. The code and the database are being
+designed around an offline-first Flutter phone app with sync (ADR-0002). The
+server and the web app stay TypeScript (Q-01), so the budget and cycle rules
+exist in TypeScript and Dart, kept equal by shared test cases.
+
+## Commands
+
+Bun installs packages and runs scripts; Nx itself runs on Node 24. pnpm and
+npm are not used.
+
+- `bun install`: install, and set up the Husky hooks.
+- `bun run check`: Biome lint and format check. `bun run format` fixes.
+- `bun x nx affected -t typecheck test`: what CI runs after Biome.
+- `bun add -d <pkg> --cwd <project>`: add a library only when its
+  `docs/architecture/tech-stack.md` row is Chosen or Accepted.
+
+Commits follow Conventional Commits (commitlint), with the stage and the
+requirement IDs in the footer, such as `Refs: Stage 2, BR-09`.
+
+## Where things are
+
+- `docs/` is the spec. `docs/README.md` says which file holds each kind of ID
+  (`US-`, `AC-`, `FR-`, `BR-`, `EC-`, `NFR-`, `A-`, `Q-`, `UI-`, `J-`, `BG-`,
+  `FD-`). Look a rule up there before changing anything it governs.
+- `docs/implementation-plan.md` is the build order and where the project
+  stands: stages 0 to 9, their work items, the sign-offs and Gates A to C. A
+  commit that ticks a work item or a sign-off item also updates the plan's
+  stage table and "Where the project is". Task ids (`T-`) were retired with
+  `docs/tasks/` on 11 Oct 2026.
+- IDs were made contiguous on 11 Oct 2026. From now on, never renumber or
+  reuse one: a removed requirement leaves a gap.
+
+## Design files
+
+`docs/design/ui/*.pen` are pen.dev files. They are encrypted, so edit them
+with the `pen` CLI (`pen interactive --app desktop --in <file>`) and never
+Read or Grep them. `fiscus.pen` imports `design-system.lib.pen` by a relative
+path, so keep the two side by side.
+
+## Writing the docs
+
+Match the existing docs: plain sentences, tables, and IDs cited inline. Call
+the app Fiscus; "Expense" as a transaction type (BR-02) keeps its name.
+Nothing personal goes in the repo: salary and budget amounts live in
+settings, never in docs or code.

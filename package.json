@@ -1,0 +1,26 @@
+{
+  "name": "@fiscus/source",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "libs/*",
+    "modules/*/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "check": "biome check .",
+    "format": "biome check --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@commitlint/cli": "21.2.3",
+    "@commitlint/config-conventional": "21.2.3",
+    "@nx/js": "23.2.1",
+    "husky": "9.1.7",
+    "nx": "23.2.1",
+    "typescript": "~6.0.3"
+  }
+}
