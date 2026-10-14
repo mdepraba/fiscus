@@ -20,6 +20,7 @@ build is in and what comes next.
 | `modules/fiscus/` | The Fiscus module: `contracts`, `domain`, `api` and `web` |
 | `tools/` | `boundaries/` and `secrets/`, the checks CI and the pre-commit hook run, and the esbuild plugin that keeps Nest's decorator metadata |
 | `nx.json`, `tsconfig.base.json` | The Nx workspace and the shared TypeScript settings |
+| `compose.yaml`, `.env.example` | PostgreSQL 18 for development, and the settings the API reads |
 | `biome.json` | Linting and formatting |
 | `.husky/`, `commitlint.config.mjs` | Git hooks: Biome and the secrets scan on staged files, Conventional Commits |
 | `.github/workflows/ci.yml` | The `verify` job, run on every push |
@@ -27,11 +28,20 @@ build is in and what comes next.
 
 ## Development
 
-You need Bun 1.4.2 (the version in `packageManager` in `package.json`) and
-Node 24, which runs Nx.
+You need Bun 1.4.2 (the version in `packageManager` in `package.json`),
+Node 24, which runs Nx, and Docker for the development database,
+PostgreSQL 18.
 
 ```bash
 bun install
+```
+
+```bash
+cp .env.example .env
+```
+
+```bash
+docker compose up -d postgres
 ```
 
 ```bash
@@ -56,4 +66,6 @@ bun x nx run @app/fiscus-web:dev
 
 `bun install` also sets up the Git hooks. `bun run format` fixes what
 `bun run check` reports. The API listens on 127.0.0.1:3000, and the web app
-on localhost:4200 proxies `/api` and `/health` to it.
+on localhost:4200 proxies `/api` and `/health` to it. `/health` answers 503
+while PostgreSQL is down. The database tests run when `.env` sets
+`DATABASE_URL`, each in a throwaway database, and are skipped without it.

@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "default": "./src/testing.ts"
+    },
     "./package.json": "./package.json"
   },
   "nx": {
@@ -15,5 +19,9 @@
       "scope:core",
       "type:core"
     ]
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.1"
   }
 }

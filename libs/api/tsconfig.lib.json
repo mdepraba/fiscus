@@ -4,6 +4,8 @@
     "rootDir": "src",
     "outDir": "out-tsc/lib",
     "tsBuildInfoFile": "out-tsc/lib/tsconfig.lib.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

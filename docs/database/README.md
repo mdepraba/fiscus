@@ -227,6 +227,23 @@ uses, with its `mutationId` as the idempotency key in
 `core.idempotency_keys`. A stale `baseVersion` is a conflict, exactly as in
 EC-04.
 
+## Migrations
+
+Each module keeps its SQL files in its own `migrations/` folder, beside its
+Drizzle schema. `runMigrations` in `libs/db` applies them on deploy (FR-07):
+
+- Core's run first, then each module's, in the order the API lists them.
+  Inside a folder, files run in name order.
+- Each file and its record commit in one transaction, so a failing file
+  leaves neither behind.
+- The record is `public.schema_migrations`: the module, the file name, a
+  checksum and the time. It lives in `public` so that core's first migration
+  can create the `core` schema.
+- A recorded file runs once. A second run with nothing new does nothing.
+- A recorded file that has changed stops the run. Fix it with a new
+  migration, never by editing one that ran.
+- An advisory lock makes two runners take turns.
+
 ## Hand-written SQL
 
 DBML cannot express these, so the `core` and `fiscus` migrations (Stages 2 and 4) copy them in.

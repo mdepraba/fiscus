@@ -8,6 +8,11 @@ const swcDecoratorMetadata = require('../../tools/esbuild/swc-decorator-metadata
  * The plugin is not optional: NestJS resolves constructor dependencies from
  * `emitDecoratorMetadata`, which esbuild does not implement. See
  * tools/esbuild/swc-decorator-metadata.cjs.
+ *
+ * The workspace's own projects are bundled, but third-party packages stay
+ * external (`thirdParty: false` in package.json) and load from node_modules.
+ * Bun gives each project only the packages it declares, so apps/api's
+ * package.json lists every package the bundle imports, its libraries' too.
  */
 module.exports = {
   plugins: [swcDecoratorMetadata()],

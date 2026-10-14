@@ -1,26 +1,30 @@
 import 'reflect-metadata';
+import { ConfigError, loadConfig } from '@core/api';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module.js';
 
-// FR-01: only `tailscale serve` reaches the app, so it binds to loopback.
-// Stage 1's data layer moves these into configuration read from the
-// environment.
-const HOST = '127.0.0.1';
-const PORT = 3000;
-
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
-    bufferLogs: true,
-  });
+  // NFR-10: systemd fills the environment from /srv/fiscus/.env, and Bun
+  // loads the repo's .env in development. A bad value stops the process
+  // here, before anything binds.
+  const config = loadConfig(process.env);
+
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule.forRoot(config),
+    new FastifyAdapter(),
+    { bufferLogs: true },
+  );
   app.enableShutdownHooks();
 
-  await app.listen({ host: HOST, port: PORT });
-  Logger.log(`Fiscus listening on http://${HOST}:${PORT}`, 'Bootstrap');
+  // FR-01: only `tailscale serve` reaches the app, so it binds to loopback.
+  await app.listen({ host: config.host, port: config.port });
+  Logger.log(`Fiscus listening on http://${config.host}:${config.port}`, 'Bootstrap');
 }
 
 bootstrap().catch((error: unknown) => {
-  console.error(error);
+  // A ConfigError names keys, never values (NFR-11).
+  console.error(error instanceof ConfigError ? error.message : error);
   process.exit(1);
 });

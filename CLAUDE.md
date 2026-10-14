@@ -9,7 +9,9 @@ and the code are all called Fiscus (`fiscus` in code).
 
 The Nx workspace holds the 9 TypeScript projects of PRD 5.4, scaffolded in
 Stage 1 with **no features yet**: `apps/api` (Nest on Fastify) answers
-`/health`, and `apps/fiscus-web` (React on Vite) shows a placeholder. The
+`/health` (503 while PostgreSQL is down), and `apps/fiscus-web` (React on
+Vite) shows a placeholder. `libs/db` holds the pool, Drizzle and the
+migration runner; `libs/api` reads the configuration. The
 code and the database are designed around an offline-first Flutter phone
 app with sync (ADR-0002), which arrives in Stage 9 as
 `apps/fiscus-mobile/`. The server and the web app stay TypeScript (Q-01), so
@@ -22,6 +24,9 @@ Bun installs packages and runs scripts; Nx itself runs on Node 24. pnpm and
 npm are not used.
 
 - `bun install`: install, and set up the Husky hooks.
+- `cp .env.example .env` and `docker compose up -d postgres`: PostgreSQL 18
+  for development. Database tests run when `DATABASE_URL` is set, each in a
+  throwaway database from `@core/db/testing`, and are skipped without it.
 - `bun run check`: Biome lint and format check. `bun run format` fixes.
 - `bun run boundaries`: the module rules of PRD 5.4 over the Nx graph.
   Every project needs one `scope:` and one `type:` tag.
@@ -34,7 +39,9 @@ npm are not used.
 - `bun add -d <pkg> --cwd <project>`: add a library only when its
   `docs/architecture/tech-stack.md` row is Chosen or Accepted. A new
   server-only package also goes in `SERVER_PACKAGES` in
-  `tools/boundaries/rules.mjs`.
+  `tools/boundaries/rules.mjs`. Bun gives each project only the packages it
+  declares, and the API bundle keeps third-party packages external, so
+  `apps/api` also declares every runtime package its libraries import.
 
 Commits follow Conventional Commits (commitlint), with the stage and the
 requirement IDs in the footer, such as `Refs: Stage 2, BR-09`.

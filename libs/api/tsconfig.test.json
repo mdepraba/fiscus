@@ -3,8 +3,14 @@
   "compilerOptions": {
     "outDir": "out-tsc/test",
     "tsBuildInfoFile": "out-tsc/test/tsconfig.test.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "types": ["vitest/globals", "vitest/importMeta", "node"]
   },
   "include": ["vitest.config.mts", "src/**/*.test.ts"],
-  "references": [{ "path": "./tsconfig.lib.json" }]
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    }
+  ]
 }

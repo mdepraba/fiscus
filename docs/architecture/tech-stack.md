@@ -3,8 +3,9 @@
 What Fiscus runs on and builds with, and why. The server and the web app are
 TypeScript (Q-01), and the phone app is Flutter (Q-07,
 [ADR-0002](decisions/0002-offline-first-mobile-app.md)). The projects are
-scaffolded (Stage 1), with Nest and Fastify in `apps/api`, React and Vite in
-`apps/fiscus-web`, and the test and build tooling installed. Every other row
+scaffolded (Stage 1), with Nest and Fastify in `apps/api`, `pg` and Drizzle
+in `libs/db`, React and Vite in `apps/fiscus-web`, and the test and build
+tooling installed. Every other row
 waits for the work item that first needs it, which runs `bun add`, or
 `flutter pub add` for the phone app. Every row has a status:
 
@@ -144,7 +145,7 @@ These load in their module's chunk or process, never in the app's shell.
 | Nx 23.2 | Chosen | The project graph, `affected`, caching, and `nx sync` for TypeScript references | A one-module change finishes CI in 5 minutes or less (NFR-21) |
 | esbuild 0.28 and SWC 1.15 | Chosen | Bundling `apps/api` | SWC runs first, because esbuild does not emit the decorator metadata Nest DI needs (`tools/esbuild/swc-decorator-metadata.cjs`). Pinned to 1.15.8 on 15 Oct 2026: SWC 1.16 copies its native binary into a cache folder and refuses to load when that folder's parents grant write access to other accounts, as `%LOCALAPPDATA%` and `E:\` do on the development machine. Revisit when SWC relaxes the check |
 | Vitest 4.1, jsdom 30 and `@vitest/coverage-v8` | Chosen | Every project's tests | One runner for server, shared and web code |
-| Biome 2.5.15 | Chosen | Linting and formatting | One fast tool for both |
+| Biome 2.5.15 | Chosen | Linting and formatting | One fast tool for both. Nest code (`apps/api`, `libs/api`, each module's `api`) turns off three rules that fight its dependency injection: `useImportType`, because an injected class must not be imported with `import type`, `noUnusedFunctionParameters` and `noStaticOnlyClass`. Parameter decorators are turned on for the parser |
 | `tools/boundaries` | Chosen | Module rules over the Nx graph | Biome has no boundary rule |
 | `tools/secrets` | Chosen | Rejecting env files and hard-coded secrets in tracked files | NFR-10 |
 | Husky 9 and commitlint 21 | Chosen | Conventional Commits, plus the secrets scan before each commit | Catches problems before they reach CI |
