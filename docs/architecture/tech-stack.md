@@ -2,11 +2,11 @@
 
 What Fiscus runs on and builds with, and why. The server and the web app are
 TypeScript (Q-01), and the phone app is Flutter (Q-07,
-[ADR-0002](decisions/0002-offline-first-mobile-app.md)). Fiscus has no code
-yet. The workspace tooling is installed: Nx, TypeScript, Biome, Husky and
-commitlint. Every other row waits for the work item that first needs it,
-which runs `bun add`, or `flutter pub add` for the phone app. Every row has
-a status:
+[ADR-0002](decisions/0002-offline-first-mobile-app.md)). The projects are
+scaffolded (Stage 1), with Nest and Fastify in `apps/api`, React and Vite in
+`apps/fiscus-web`, and the test and build tooling installed. Every other row
+waits for the work item that first needs it, which runs `bun add`, or
+`flutter pub add` for the phone app. Every row has a status:
 
 - **Chosen**: picked for the design, with its version pinned.
 - **PRD**: named by the [PRD](../prd) but not installed yet.
@@ -142,7 +142,7 @@ These load in their module's chunk or process, never in the app's shell.
 | Technology | Status | Used for | Why |
 | --- | --- | --- | --- |
 | Nx 23.2 | Chosen | The project graph, `affected`, caching, and `nx sync` for TypeScript references | A one-module change finishes CI in 5 minutes or less (NFR-21) |
-| esbuild 0.28 and SWC 1.16 | Chosen | Bundling `apps/api` | SWC runs first, because esbuild does not emit the decorator metadata Nest DI needs (`tools/esbuild/swc-decorator-metadata.cjs`) |
+| esbuild 0.28 and SWC 1.15 | Chosen | Bundling `apps/api` | SWC runs first, because esbuild does not emit the decorator metadata Nest DI needs (`tools/esbuild/swc-decorator-metadata.cjs`). Pinned to 1.15.8 on 15 Oct 2026: SWC 1.16 copies its native binary into a cache folder and refuses to load when that folder's parents grant write access to other accounts, as `%LOCALAPPDATA%` and `E:\` do on the development machine. Revisit when SWC relaxes the check |
 | Vitest 4.1, jsdom 30 and `@vitest/coverage-v8` | Chosen | Every project's tests | One runner for server, shared and web code |
 | Biome 2.5.15 | Chosen | Linting and formatting | One fast tool for both |
 | `tools/boundaries` | Chosen | Module rules over the Nx graph | Biome has no boundary rule |
@@ -240,10 +240,10 @@ never installs it.
 
 ## Follow-ups
 
-1. **Add `pg` to the boundary rules** (Stage 1). `pg` goes in
-   `FRAMEWORK_PACKAGES`, `SERVER_PACKAGES` and `DATABASE_PACKAGES` in
+1. **Add `pg` to the boundary rules** (done, Stage 1). `pg` is in
+   `FRAMEWORK_PACKAGES` and `SERVER_PACKAGES` in
    `tools/boundaries/rules.mjs`, and `nodemailer`, `@simplewebauthn/server`
-   and `drizzle-kit` go in `SERVER_PACKAGES`. Add every new server-only
+   and `drizzle-kit` are in `SERVER_PACKAGES`. Add every new server-only
    package there in the commit that installs it.
 2. **Pin the Bun version** (done). `"packageManager": "bun@1.4.2"` in the
    root `package.json` is the one place the version is written. CI reads it

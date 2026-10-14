@@ -158,8 +158,9 @@ are reads and go straight to SQL with pagination (EC-22, NFR-04).
 
 ## Action items
 
-1. [ ] Add a boundary rule that `contracts` imports no framework package,
-       because contracts reach the browser bundle (Stage 1).
+1. [x] Add a boundary rule that `contracts` imports no framework package,
+       because contracts reach the browser bundle (Stage 1). Done
+       15 Oct 2026, in `tools/boundaries/rules.mjs`.
 2. [ ] Phase 1: add the `Clock`, `Mailer` and `FileStore` ports to `libs/api`
        as abstract classes.
 3. [ ] Define the rule-violation shape in `contracts`, and a core exception

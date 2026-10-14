@@ -8,12 +8,15 @@ permissions:
   contents: read
 
 jobs:
+  # NFR-20: boundaries, types and tests pass here before every deploy; the
+  # host never builds.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
+          # Nx compares against the base commit to decide what is affected.
           fetch-depth: 0
 
       # The Bun version comes from "packageManager" in package.json (tech-stack follow-up 2).
@@ -26,10 +29,44 @@ jobs:
         with:
           node-version: 24
 
+      # NFR-21: a one-module change finishes in 5 minutes or less, because
+      # untouched projects replay from this cache instead of running.
+      - uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            nx-${{ runner.os }}-
+
       - run: bun install --frozen-lockfile
+        env:
+          # Git hooks are for local commits; CI has nothing to commit.
+          HUSKY: 0
 
       - uses: nrwl/nx-set-shas@v5
 
-      - run: bun x biome ci .
+      # TypeScript project references come from the project graph, so stale
+      # ones fail here rather than surprising someone locally.
+      - name: Check the workspace is in sync
+        run: bun x nx sync:check
 
-      - run: bun x nx affected -t typecheck test
+      # PRD 5.4: every project has one scope and one type tag, and modules
+      # meet only at contracts.
+      - name: Check module boundaries
+        run: |
+          bun run boundaries
+          bun run boundaries:test
+
+      # NFR-10: secrets live only in /srv/fiscus/.env. The pre-commit hook
+      # blocks them locally; this catches a commit made with --no-verify.
+      - name: Check for secrets and env files
+        run: |
+          bun run secrets
+          bun run secrets:test
+
+      - name: Lint and format
+        run: bun x biome ci .
+
+      - name: Typecheck, test and build what changed
+        run: bun x nx affected -t typecheck test build

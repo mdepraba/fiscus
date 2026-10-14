@@ -1,0 +1,22 @@
+{
+  "name": "@core/ui",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.tsx",
+      "default": "./src/index.tsx"
+    },
+    "./package.json": "./package.json"
+  },
+  "nx": {
+    "tags": [
+      "scope:core",
+      "type:core"
+    ]
+  },
+  "dependencies": {
+    "react": "19.3.0"
+  }
+}

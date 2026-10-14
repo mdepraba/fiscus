@@ -14,11 +14,17 @@ tasks, shortened, and the T- task ids are no longer used.
 Updated 15 Oct 2026.
 
 - **Stage 0, Redesign the spec: signed off 15 Oct 2026.**
-- **Stage 1, Foundations: in progress.** 5 of 14 work items done, all of
-  them decisions or tooling done ahead.
+- **Stage 1, Foundations: in progress.** 7 of 14 work items done. The
+  tooling is done; the data layer and the first deploy are left.
 - **Lately:**
-  - 15 Oct 2026: the workspace and the docs committed on `dev`, and Stage 0
-    signed off.
+  - 15 Oct 2026:
+    - The workspace and the docs committed on `dev`, and Stage 0 signed off.
+    - The 9 projects scaffolded, with `bun run boundaries` and
+      `bun run secrets` in CI and the boundary rules tightened. `apps/api`
+      answers `/health`, and `apps/fiscus-web` builds to 69 KB gzipped.
+    - **You:** SWC pinned to 1.15.8, because 1.16 refuses to load its
+      native binary on the development machine
+      ([tech stack](architecture/tech-stack.md#tooling-and-quality)).
   - 12 Oct 2026:
     - The app flow and the phone design revised. The web app's offline
       queue and install prompt are gone, BG-07 is now the phone app's sync,
@@ -35,12 +41,13 @@ Updated 15 Oct 2026.
       confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** scaffold the projects, Stage 1's first work item.
+- **Next:** the data layer: PostgreSQL 18 for development, then `libs/db`.
 - **Waiting on you:** a private GitHub repo for CI, and the host, before
   Stage 1's deploy items. FD-31 is open for Stage 9, and the Stage 2
   decisions can be answered early.
-- **The code:** the Nx workspace, its tooling and CI are committed. There
-  are no projects yet. The repo has no remote yet, so CI has not run.
+- **The code:** the 9 TypeScript projects of PRD 5.4, with no features
+  yet. The phone app waits for Stage 9. The repo has no remote yet, so CI
+  has not run; its steps pass locally.
 
 ## Stages
 
@@ -67,7 +74,7 @@ flowchart TD
 | Stage | Phase | Delivers | Work done | Ends at | Status |
 | --- | --- | --- | --- | --- | --- |
 | [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Signed off 15 Oct 2026 |
-| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 5 of 14 | First deploy | In progress |
+| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 7 of 14 | First deploy | In progress |
 | [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 0 of 26 | Sign-in works | Not started |
 | [3 Operations](#stage-3-operations) | 1 | Backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 6 | Gate A | Not started |
 | [4 Fiscus specs and rules](#stage-4-fiscus-specs-and-rules) | 2 | The `fiscus` schema, API and contracts, the seed, every domain rule with its tests, and design Pass 2 | 0 of 14 | Rules proven | Not started |
@@ -209,12 +216,13 @@ from CI.
 
 **Tooling**
 
-- [ ] Scaffold the PRD 5.4 projects, each with one `scope:` and one `type:`
-      tag. The phone app waits for Stage 9:
+- [x] Scaffold the PRD 5.4 projects, each with one `scope:` and one `type:`
+      tag. The phone app waits for Stage 9 (15 Oct 2026):
   - `bun run boundaries` and `bun run secrets`
   - CI's `verify` job runs the boundary check, type check, lint and tests
   - (PRD 5.4, ADR-0001, NFR-10, NFR-20)
-- [ ] Tighten the boundary rules (ADR-0001 action 1, tech-stack follow-up 1):
+- [x] Tighten the boundary rules (ADR-0001 action 1, tech-stack follow-up 1,
+      15 Oct 2026, with the scaffold):
   - `contracts` imports no framework
   - `pg`, `nodemailer` and `@simplewebauthn/server` count as server
     packages
@@ -836,6 +844,7 @@ Decisions only you can make, and the stage that needs each one.
 | Accept ADR-0001 | 1 | Done, 4 Oct 2026 |
 | Libraries for foundations and Phase 1 | 1 | Done, 4 Oct 2026 |
 | Gates A and B | 1 | Done, 4 Oct 2026. Gate B changed for Q-08 on 11 Oct 2026 |
+| SWC 1.16 will not load on the development machine | 1 | Answered 15 Oct 2026: pin SWC 1.15.8 |
 | Q-04 SMTP relay; A-03, A-06, A-07, A-10 | 2 | Open |
 | Review the core schema and the core API requirements | 2 | Open |
 | Q-02 ingest domain; A-04, A-08, A-09; `@fastify/multipart` | 4 | Open |
