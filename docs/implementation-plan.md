@@ -13,11 +13,12 @@ tasks, shortened, and the T- task ids are no longer used.
 
 Updated 15 Oct 2026.
 
-- **Stage 0, Redesign the spec: waiting on your sign-off.** All 13 work
-  items are done.
+- **Stage 0, Redesign the spec: signed off 15 Oct 2026.**
+- **Stage 1, Foundations: in progress.** 5 of 14 work items done, all of
+  them decisions or tooling done ahead.
 - **Lately:**
-  - 15 Oct 2026: the workspace and the docs committed on `dev`, the last
-    work item.
+  - 15 Oct 2026: the workspace and the docs committed on `dev`, and Stage 0
+    signed off.
   - 12 Oct 2026:
     - The app flow and the phone design revised. The web app's offline
       queue and install prompt are gone, BG-07 is now the phone app's sync,
@@ -34,10 +35,9 @@ Updated 15 Oct 2026.
       confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** the Stage 0 sign-off, then Stage 1's first work item, scaffolding
-  the projects.
-- **Waiting on you:** the Stage 0 sign-off. Read Stages 1 to 9 as revised
-  and say whether you agree. FD-31 is open for Stage 9, and the Stage 2
+- **Next:** scaffold the projects, Stage 1's first work item.
+- **Waiting on you:** a private GitHub repo for CI, and the host, before
+  Stage 1's deploy items. FD-31 is open for Stage 9, and the Stage 2
   decisions can be answered early.
 - **The code:** the Nx workspace, its tooling and CI are committed. There
   are no projects yet. The repo has no remote yet, so CI has not run.
@@ -66,8 +66,8 @@ flowchart TD
 
 | Stage | Phase | Delivers | Work done | Ends at | Status |
 | --- | --- | --- | --- | --- | --- |
-| [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Waiting on sign-off |
-| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 5 of 14 | First deploy | Not started |
+| [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Signed off 15 Oct 2026 |
+| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 5 of 14 | First deploy | In progress |
 | [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 0 of 26 | Sign-in works | Not started |
 | [3 Operations](#stage-3-operations) | 1 | Backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 6 | Gate A | Not started |
 | [4 Fiscus specs and rules](#stage-4-fiscus-specs-and-rules) | 2 | The `fiscus` schema, API and contracts, the seed, every domain rule with its tests, and design Pass 2 | 0 of 14 | Rules proven | Not started |
@@ -185,7 +185,8 @@ before any code is written.
 - [x] The PRD's status no longer says "Being revised", and no doc carries a
       "v1" banner (12 Oct 2026)
 - [x] ADR-0002 is Accepted (12 Oct 2026)
-- [ ] You have read Stages 1 to 9 as revised and agree with them
+- [x] You have read Stages 1 to 9 as revised and agree with them
+      (15 Oct 2026)
 
 ## Stage 1: Foundations
 

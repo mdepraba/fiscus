@@ -4,11 +4,11 @@ Oct 12, 2026 · @Praba
 
 | Field | Value |
 | --- | --- |
-| Status | Revised for the offline-first Flutter app ([ADR-0002](../architecture/decisions/0002-offline-first-mobile-app.md)) and the web app without a PWA (Q-08). It waits for your acceptance at the Stage 0 sign-off; blocking questions are in 6.2 |
+| Status | Revised for the offline-first Flutter app ([ADR-0002](../architecture/decisions/0002-offline-first-mobile-app.md)) and the web app without a PWA (Q-08). Accepted at the Stage 0 sign-off on Oct 15, 2026; blocking questions are in 6.2 |
 | Version | 1.1 |
 | Owner | @Praba |
 | Stakeholders | Owner only (single-maintainer project) |
-| Last updated | Oct 12, 2026 |
+| Last updated | Oct 15, 2026 |
 
 ## Revision notes
 
