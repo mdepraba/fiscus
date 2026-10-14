@@ -11,30 +11,36 @@ tasks, shortened, and the T- task ids are no longer used.
 
 ## Where the project is
 
-Updated 12 Oct 2026.
+Updated 15 Oct 2026.
 
-- **Stage 0, Redesign the spec: in progress.** 12 of 13 work items done.
-- **Lately** (all 12 Oct 2026):
-  - The app flow and the phone design revised. The web app's offline queue
-    and install prompt are gone, BG-07 is now the phone app's sync, and
-    [phone-app.md](design/app-flow/phone-app.md) maps every screen into the
-    phone app and names its own (UI-CORE-06, UI-FIS-50 to UI-FIS-54).
-  - The architecture guide, the tech stack and PRD 5.4 revised: the phone
-    app in `apps/fiscus-mobile/`, sync on the server, the shared test cases,
-    and the phone's packages as Proposed.
-  - The [PRD](prd/README.md) revised to v1.1, with the `fiscus:settings`
-    scope for the phone's token.
-  - ADR-0002 accepted, the phone app's stories
-    [US-19 to US-24](user-story/phone-app.md), and [Gate C](#gate-c)
-    confirmed for Android with a pay cycle of real use.
+- **Stage 0, Redesign the spec: waiting on your sign-off.** All 13 work
+  items are done.
+- **Lately:**
+  - 15 Oct 2026: the workspace and the docs committed on `dev`, the last
+    work item.
+  - 12 Oct 2026:
+    - The app flow and the phone design revised. The web app's offline
+      queue and install prompt are gone, BG-07 is now the phone app's sync,
+      and [phone-app.md](design/app-flow/phone-app.md) maps every screen
+      into the phone app and names its own (UI-CORE-06, UI-FIS-50 to
+      UI-FIS-54).
+    - The architecture guide, the tech stack and PRD 5.4 revised: the phone
+      app in `apps/fiscus-mobile/`, sync on the server, the shared test
+      cases, and the phone's packages as Proposed.
+    - The [PRD](prd/README.md) revised to v1.1, with the `fiscus:settings`
+      scope for the phone's token.
+    - ADR-0002 accepted, the phone app's stories
+      [US-19 to US-24](user-story/phone-app.md), and [Gate C](#gate-c)
+      confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** commit the docs, the last work item.
+- **Next:** the Stage 0 sign-off, then Stage 1's first work item, scaffolding
+  the projects.
 - **Waiting on you:** the Stage 0 sign-off. Read Stages 1 to 9 as revised
   and say whether you agree. FD-31 is open for Stage 9, and the Stage 2
   decisions can be answered early.
-- **The code:** the Nx workspace, its tooling and CI are set up. There are no
-  projects yet, and nothing is committed.
+- **The code:** the Nx workspace, its tooling and CI are committed. There
+  are no projects yet. The repo has no remote yet, so CI has not run.
 
 ## Stages
 
@@ -60,7 +66,7 @@ flowchart TD
 
 | Stage | Phase | Delivers | Work done | Ends at | Status |
 | --- | --- | --- | --- | --- | --- |
-| [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 12 of 13 | Spec accepted | In progress |
+| [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Waiting on sign-off |
 | [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 5 of 14 | First deploy | Not started |
 | [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 0 of 26 | Sign-in works | Not started |
 | [3 Operations](#stage-3-operations) | 1 | Backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 6 | Gate A | Not started |
@@ -171,7 +177,8 @@ before any code is written.
       (12 Oct 2026)
 - [x] **You:** confirm the [Gate C](#gate-c) checklist. Confirmed 12 Oct
       2026: Android only, plus one pay cycle of real use
-- [ ] The docs committed, and tracked in git from here on (PRD 5.4)
+- [x] The docs committed, and tracked in git from here on (PRD 5.4,
+      15 Oct 2026)
 
 ### Sign-off: spec accepted
 
