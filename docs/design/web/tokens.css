@@ -1,0 +1,347 @@
+/* Fiscus design tokens (theme A · Ledger).
+ * Generated with the prototype; matches the Figma variables (Color, Color · Dark,
+ * Dimension) and the text and effect styles. Light is the default; dark applies
+ * under prefers-color-scheme unless data-theme="light", or with data-theme="dark". */
+:root {
+  --space-0: 0px;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-full: 999px;
+  --size-control-sm: 28px;
+  --size-control-md: 32px;
+  --size-control-lg: 40px;
+  --size-control-xl: 50px;
+  --size-touch: 44px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-sidebar: 232px;
+  --size-topbar: 52px;
+  --size-panel: 440px;
+  --font-sans:
+    "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, "SFMono-Regular", "Cascadia Mono", monospace;
+  --font-display: 600 32px / 36px var(--font-sans);
+  --tracking-display: -0.02em;
+  --font-title-1: 600 24px / 30px var(--font-sans);
+  --tracking-title-1: -0.015em;
+  --font-title-2: 600 20px / 26px var(--font-sans);
+  --tracking-title-2: -0.01em;
+  --font-headline: 600 15px / 20px var(--font-sans);
+  --tracking-headline: -0.005em;
+  --font-headline-l: 600 17px / 22px var(--font-sans);
+  --tracking-headline-l: -0.01em;
+  --font-body-l: 400 16px / 22px var(--font-sans);
+  --tracking-body-l: -0.005em;
+  --font-body: 400 14px / 20px var(--font-sans);
+  --tracking-body: 0em;
+  --font-body-strong: 500 14px / 20px var(--font-sans);
+  --tracking-body-strong: 0em;
+  --font-callout: 400 13px / 18px var(--font-sans);
+  --tracking-callout: 0em;
+  --font-callout-strong: 500 13px / 18px var(--font-sans);
+  --tracking-callout-strong: 0em;
+  --font-caption: 400 12px / 16px var(--font-sans);
+  --tracking-caption: 0.005em;
+  --font-caption-strong: 500 12px / 16px var(--font-sans);
+  --tracking-caption-strong: 0.005em;
+  --font-label: 500 11px / 14px var(--font-sans);
+  --tracking-label: 0.02em;
+  --font-amount-xl: 500 32px / 38px var(--font-mono);
+  --tracking-amount-xl: -0.02em;
+  --font-amount-l: 500 22px / 28px var(--font-mono);
+  --tracking-amount-l: -0.015em;
+  --font-amount-m: 500 14px / 20px var(--font-mono);
+  --tracking-amount-m: 0em;
+  --font-amount-s: 400 13px / 18px var(--font-mono);
+  --tracking-amount-s: 0em;
+  --font-amount-xs: 400 12px / 16px var(--font-mono);
+  --tracking-amount-xs: 0em;
+  --font-amount-2xs: 500 10px / 12px var(--font-mono);
+  --tracking-amount-2xs: -0.02em;
+  --font-kbd: 500 11px / 14px var(--font-mono);
+  --tracking-kbd: 0em;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 120ms;
+  --dur-popover: 150ms;
+  --dur-dialog-in: 200ms;
+  --dur-dialog-out: 150ms;
+  --dur-toast-in: 220ms;
+  --dur-toast-out: 160ms;
+  --dur-fade: 150ms;
+  --color-bg-canvas: #f7f7f5;
+  --color-bg-surface: #ffffff;
+  --color-bg-raised: #ffffff;
+  --color-bg-sunken: #f0f0ed;
+  --color-bg-hover: #f0f0ed;
+  --color-bg-selected: #e6e6e2;
+  --color-bg-inverse: #18181b;
+  --color-bg-skeleton: #e6e6e2;
+  --color-bg-material: rgba(247, 247, 245, 0.72);
+  --color-bg-material-sidebar: rgba(240, 240, 237, 0.8);
+  --color-bg-scrim: rgba(24, 24, 27, 0.32);
+  --color-bg-on-inverse: rgba(255, 255, 255, 0.14);
+  --color-bg-on-inverse-strong: rgba(255, 255, 255, 0.5);
+  --color-fill-primary: #18181b;
+  --color-fill-primary-hover: #3f3f46;
+  --color-fill-secondary: #ffffff;
+  --color-fill-secondary-hover: #f0f0ed;
+  --color-fill-danger: #b8322b;
+  --color-fill-danger-hover: #9a2822;
+  --color-fill-disabled: #e6e6e2;
+  --color-text-primary: #18181b;
+  --color-text-secondary: #5b5b66;
+  --color-text-tertiary: #6f6f79;
+  --color-text-disabled: #a3a39e;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-danger: #ffffff;
+  --color-text-inverse: #ffffff;
+  --color-border-hairline: #e6e6e2;
+  --color-border-control: #8c8c96;
+  --color-border-strong: #18181b;
+  --color-data-income: #1d5fd1;
+  --color-data-expense: #b8322b;
+  --color-data-transfer: #5b5b66;
+  --color-data-income-bg: #eef4ff;
+  --color-data-expense-bg: #fdecea;
+  --color-data-transfer-bg: #f0f0ed;
+  --color-status-aman: #157338;
+  --color-status-aman-bg: #e8f5ec;
+  --color-status-ketat: #8a5a00;
+  --color-status-ketat-bg: #fff4db;
+  --color-status-belum: #b8322b;
+  --color-status-belum-bg: #fdecea;
+  --color-status-neutral: #5b5b66;
+  --color-status-neutral-bg: #f0f0ed;
+  --color-chart-1: #27272a;
+  --color-chart-2: #5e8c6a;
+  --color-chart-3: #a8844e;
+  --color-chart-4: #8a5e8f;
+  --color-chart-5: #5b7290;
+  --color-chart-6: #3d8a8a;
+  --color-chart-7: #a65a72;
+  --color-chart-other: #8e8e97;
+  --shadow-1:
+    0 1px 2px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.04);
+  --shadow-2:
+    0 8px 24px rgba(24, 24, 27, 0.12), 0 2px 6px rgba(24, 24, 27, 0.08);
+  --shadow-3:
+    0 24px 48px rgba(24, 24, 27, 0.16), 0 4px 12px rgba(24, 24, 27, 0.08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg-canvas: #121214;
+    --color-bg-surface: #1b1b1f;
+    --color-bg-raised: #232328;
+    --color-bg-sunken: #0e0e10;
+    --color-bg-hover: #232328;
+    --color-bg-selected: #2c2c32;
+    --color-bg-inverse: #ededef;
+    --color-bg-skeleton: #2c2c32;
+    --color-bg-material: rgba(27, 27, 31, 0.72);
+    --color-bg-material-sidebar: rgba(22, 22, 25, 0.82);
+    --color-bg-scrim: rgba(0, 0, 0, 0.5);
+    --color-bg-on-inverse: rgba(24, 24, 27, 0.1);
+    --color-bg-on-inverse-strong: rgba(24, 24, 27, 0.45);
+    --color-fill-primary: #ededef;
+    --color-fill-primary-hover: #d4d4d8;
+    --color-fill-secondary: #232328;
+    --color-fill-secondary-hover: #2c2c32;
+    --color-fill-danger: #ff8274;
+    --color-fill-danger-hover: #ff8274;
+    --color-fill-disabled: #2c2c32;
+    --color-text-primary: #ededef;
+    --color-text-secondary: #a6a6b0;
+    --color-text-tertiary: #8a8a94;
+    --color-text-disabled: #6a6a75;
+    --color-text-on-primary: #18181b;
+    --color-text-on-danger: #18181b;
+    --color-text-inverse: #18181b;
+    --color-border-hairline: #2c2c32;
+    --color-border-control: #6a6a75;
+    --color-border-strong: #ededef;
+    --color-data-income: #78a6ff;
+    --color-data-expense: #ff8274;
+    --color-data-transfer: #a6a6b0;
+    --color-data-income-bg: #14264a;
+    --color-data-expense-bg: #3a1714;
+    --color-data-transfer-bg: #2c2c32;
+    --color-status-aman: #5dd08c;
+    --color-status-aman-bg: #14301f;
+    --color-status-ketat: #f5be55;
+    --color-status-ketat-bg: #33270f;
+    --color-status-belum: #ff8274;
+    --color-status-belum-bg: #3a1714;
+    --color-status-neutral: #a6a6b0;
+    --color-status-neutral-bg: #2c2c32;
+    --color-chart-1: #d4d4d8;
+    --color-chart-2: #7fb08b;
+    --color-chart-3: #d2ae74;
+    --color-chart-4: #b086b5;
+    --color-chart-5: #8ba3c2;
+    --color-chart-6: #62b0b0;
+    --color-chart-7: #d08aa0;
+    --color-chart-other: #6e6e78;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-3: 0 24px 48px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg-canvas: #121214;
+  --color-bg-surface: #1b1b1f;
+  --color-bg-raised: #232328;
+  --color-bg-sunken: #0e0e10;
+  --color-bg-hover: #232328;
+  --color-bg-selected: #2c2c32;
+  --color-bg-inverse: #ededef;
+  --color-bg-skeleton: #2c2c32;
+  --color-bg-material: rgba(27, 27, 31, 0.72);
+  --color-bg-material-sidebar: rgba(22, 22, 25, 0.82);
+  --color-bg-scrim: rgba(0, 0, 0, 0.5);
+  --color-bg-on-inverse: rgba(24, 24, 27, 0.1);
+  --color-bg-on-inverse-strong: rgba(24, 24, 27, 0.45);
+  --color-fill-primary: #ededef;
+  --color-fill-primary-hover: #d4d4d8;
+  --color-fill-secondary: #232328;
+  --color-fill-secondary-hover: #2c2c32;
+  --color-fill-danger: #ff8274;
+  --color-fill-danger-hover: #ff8274;
+  --color-fill-disabled: #2c2c32;
+  --color-text-primary: #ededef;
+  --color-text-secondary: #a6a6b0;
+  --color-text-tertiary: #8a8a94;
+  --color-text-disabled: #6a6a75;
+  --color-text-on-primary: #18181b;
+  --color-text-on-danger: #18181b;
+  --color-text-inverse: #18181b;
+  --color-border-hairline: #2c2c32;
+  --color-border-control: #6a6a75;
+  --color-border-strong: #ededef;
+  --color-data-income: #78a6ff;
+  --color-data-expense: #ff8274;
+  --color-data-transfer: #a6a6b0;
+  --color-data-income-bg: #14264a;
+  --color-data-expense-bg: #3a1714;
+  --color-data-transfer-bg: #2c2c32;
+  --color-status-aman: #5dd08c;
+  --color-status-aman-bg: #14301f;
+  --color-status-ketat: #f5be55;
+  --color-status-ketat-bg: #33270f;
+  --color-status-belum: #ff8274;
+  --color-status-belum-bg: #3a1714;
+  --color-status-neutral: #a6a6b0;
+  --color-status-neutral-bg: #2c2c32;
+  --color-chart-1: #d4d4d8;
+  --color-chart-2: #7fb08b;
+  --color-chart-3: #d2ae74;
+  --color-chart-4: #b086b5;
+  --color-chart-5: #8ba3c2;
+  --color-chart-6: #62b0b0;
+  --color-chart-7: #d08aa0;
+  --color-chart-other: #6e6e78;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-3: 0 24px 48px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+/* Text styles: font shorthand plus tracking. */
+.t-display {
+  font: var(--font-display);
+  letter-spacing: var(--tracking-display);
+}
+.t-title-1 {
+  font: var(--font-title-1);
+  letter-spacing: var(--tracking-title-1);
+}
+.t-title-2 {
+  font: var(--font-title-2);
+  letter-spacing: var(--tracking-title-2);
+}
+.t-headline {
+  font: var(--font-headline);
+  letter-spacing: var(--tracking-headline);
+}
+.t-headline-l {
+  font: var(--font-headline-l);
+  letter-spacing: var(--tracking-headline-l);
+}
+.t-body-l {
+  font: var(--font-body-l);
+  letter-spacing: var(--tracking-body-l);
+}
+.t-body {
+  font: var(--font-body);
+  letter-spacing: var(--tracking-body);
+}
+.t-body-strong {
+  font: var(--font-body-strong);
+  letter-spacing: var(--tracking-body-strong);
+}
+.t-callout {
+  font: var(--font-callout);
+  letter-spacing: var(--tracking-callout);
+}
+.t-callout-strong {
+  font: var(--font-callout-strong);
+  letter-spacing: var(--tracking-callout-strong);
+}
+.t-caption {
+  font: var(--font-caption);
+  letter-spacing: var(--tracking-caption);
+}
+.t-caption-strong {
+  font: var(--font-caption-strong);
+  letter-spacing: var(--tracking-caption-strong);
+}
+.t-label {
+  font: var(--font-label);
+  letter-spacing: var(--tracking-label);
+}
+.t-amount-xl {
+  font: var(--font-amount-xl);
+  letter-spacing: var(--tracking-amount-xl);
+}
+.t-amount-l {
+  font: var(--font-amount-l);
+  letter-spacing: var(--tracking-amount-l);
+}
+.t-amount-m {
+  font: var(--font-amount-m);
+  letter-spacing: var(--tracking-amount-m);
+}
+.t-amount-s {
+  font: var(--font-amount-s);
+  letter-spacing: var(--tracking-amount-s);
+}
+.t-amount-xs {
+  font: var(--font-amount-xs);
+  letter-spacing: var(--tracking-amount-xs);
+}
+.t-amount-2xs {
+  font: var(--font-amount-2xs);
+  letter-spacing: var(--tracking-amount-2xs);
+}
+.t-kbd {
+  font: var(--font-kbd);
+  letter-spacing: var(--tracking-kbd);
+}

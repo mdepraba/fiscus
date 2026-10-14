@@ -1,0 +1,820 @@
+// The `fiscus` schema: ledger and budgets (Phase 2).
+// Conventions, the trigger functions, the hand-copied SQL and the coverage
+// table are in README.md.
+//
+// Every table syncs to the phone (ADR-0002) except sync_tombstones,
+// sync_state and entry_timings. A synced table has sync_txid; the link
+// tables travel inside their parent instead.
+
+Project fiscus {
+  database_type: 'PostgreSQL'
+  Note: 'PostgreSQL 18. Ids default to uuidv7(). See docs/database/README.md'
+}
+
+// ---------------------------------------------------------------- enums
+
+Enum fiscus.transaction_type {
+  expense
+  income
+  transfer
+}
+
+Enum fiscus.transaction_status {
+  unreviewed
+  confirmed
+}
+
+Enum fiscus.transaction_source {
+  owner [note: 'The owner in the web app']
+  api [note: 'A fiscus:write token: a script or a paired phone']
+  ingest [note: 'A fiscus:ingest token on the public endpoint']
+  recurring
+  import
+}
+
+Enum fiscus.trash_reason {
+  owner [note: 'Trash, Undo, Trash all']
+  import_rollback
+  token_cleanup [note: '"Trash all from this token since a date" (EC-13)']
+}
+
+Enum fiscus.revision_action {
+  created
+  updated
+  confirmed
+  trashed
+  restored
+  duplicate_cleared [note: '"Not a duplicate"']
+}
+
+Enum fiscus.actor_kind {
+  owner
+  token
+  scheduler
+}
+
+Enum fiscus.category_kind {
+  expense
+  income
+}
+
+Enum fiscus.projection_type {
+  daily
+  weekly
+  fixed
+  minimum
+  reserve
+}
+
+Enum fiscus.budget_item_kind {
+  locked
+  flexible
+}
+
+Enum fiscus.cycle_status {
+  upcoming
+  open
+  closed
+}
+
+Enum fiscus.rule_status {
+  active
+  paused
+}
+
+Enum fiscus.pause_reason {
+  owner
+  account_inactive
+  category_inactive
+}
+
+Enum fiscus.import_status {
+  uploaded
+  previewed
+  committed
+  rolled_back
+  discarded
+  failed
+}
+
+Enum fiscus.date_format {
+  mdy [note: 'MM/DD/YYYY, the default (A-12)']
+  dmy
+  ymd
+}
+
+Enum fiscus.entry_client {
+  web
+  phone
+}
+
+// ---------------------------------------------------------------- ledger
+
+TableGroup ledger {
+  fiscus.currencies
+  fiscus.account_groups
+  fiscus.accounts
+  fiscus.categories
+  fiscus.tags
+  fiscus.transactions
+  fiscus.transaction_tags
+  fiscus.transaction_revisions
+  fiscus.templates
+  fiscus.template_tags
+}
+
+Table fiscus.currencies {
+  id uuid [pk, default: `uuidv7()`]
+  code char(3) [not null, note: 'ISO 4217']
+  minor_units smallint [not null, default: 0, note: '0 for IDR, 2 for USD. Amounts are stored in this smallest unit']
+  is_base boolean [not null, default: false, note: 'Chosen at setup, IDR by default. Changes only while there are no transactions']
+  base_per_unit "numeric(24,12)" [not null, note: 'Base units for 1 major unit of this currency, entered by hand. 1 for the base']
+  rate_updated_at timestamptz [not null, default: `now()`]
+  sort_order integer [not null, default: 0, note: 'The order of the currency picker']
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    code [unique, name: 'currencies_code_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    `(true)` [unique, name: 'currencies_base_key', note: 'WHERE is_base: exactly one base. Hand-copied']
+    (sync_txid, id) [name: 'currencies_sync_idx']
+  }
+
+  checks {
+    `code ~ '^[A-Z]{3}$'` [name: 'currencies_code_check']
+    `minor_units BETWEEN 0 AND 4` [name: 'currencies_minor_units_check']
+    `base_per_unit > 0` [name: 'currencies_base_per_unit_check']
+    `NOT is_base OR base_per_unit = 1` [name: 'currencies_base_rate_check']
+  }
+
+  Note: '''
+  The owner\'s preferred currencies: the list Settings › Currencies shows and the
+  transaction currency picker offers (FD-10, A-11). One current rate each; a rate
+  change overwrites base_per_unit and the audit log keeps the old value (FR-13).
+  Guarded by fiscus.guard_base_currency. Removed only when no account, transaction
+  or rule uses it.
+  '''
+}
+
+Table fiscus.account_groups {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(40) [not null]
+  sort_order integer [not null, default: 0]
+  deleted_at timestamptz [note: 'Only when no account uses the group']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'account_groups_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'account_groups_sync_idx']
+  }
+
+  Note: 'Seeded: Cash, Bank, E-wallet, Investment, Other (FD-11, the seed)'
+}
+
+Table fiscus.accounts {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null]
+  account_group_id uuid [not null]
+  currency_id uuid [not null, note: 'One currency per account. Locked once a transaction uses it, by the composite FKs from transactions']
+  opening_balance bigint [not null, default: 0, note: 'In the account\'s currency; negative for a liability (FD-25). Budgets and stats ignore it']
+  sort_order integer [not null, default: 0, note: 'Within its group']
+  deactivated_at timestamptz [note: 'Inactive accounts cannot take new transactions (BR-03). Never deleted']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'accounts_name_key', note: 'Across all rows, inactive included']
+    (id, currency_id) [unique, name: 'accounts_id_currency_id_key', note: 'Target of the composite FKs from transactions']
+    account_group_id [name: 'accounts_account_group_id_idx']
+    (sync_txid, id) [name: 'accounts_sync_idx']
+  }
+
+  Note: '''
+  No balance column. Balance = opening_balance
+  + sum(converted_amount) of income on it − sum(converted_amount) of expenses and transfers out
+  + sum(to_amount) of transfers in, over Confirmed and Unreviewed rows (FD-11, AC-09.1).
+  '''
+}
+
+Ref accounts_account_group_id_fkey: fiscus.accounts.account_group_id > fiscus.account_groups.id [delete: restrict]
+Ref accounts_currency_id_fkey: fiscus.accounts.currency_id > fiscus.currencies.id [delete: restrict]
+
+Table fiscus.categories {
+  id uuid [pk, default: `uuidv7()`]
+  kind fiscus.category_kind [not null, note: 'Separate expense and income lists (BR-02). Cannot change']
+  parent_id uuid [note: 'NULL for a category; set for a subcategory. Two levels only']
+  name varchar(40) [not null]
+  sort_order integer [not null, default: 0]
+  deactivated_at timestamptz [note: 'Inactive categories cannot take new transactions (BR-03). Never deleted']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    (kind, parent_id, `lower(name)`) [unique, name: 'categories_name_key', note: 'NULLS NOT DISTINCT, across all rows. Hand-copied']
+    parent_id [name: 'categories_parent_id_idx']
+    (sync_txid, id) [name: 'categories_sync_idx']
+  }
+
+  Note: 'Seeded from the Money Manager list (FR-17). fiscus.guard_category_tree keeps depth and kind'
+}
+
+Ref categories_parent_id_fkey: fiscus.categories.parent_id > fiscus.categories.id [delete: restrict]
+
+Table fiscus.tags {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(30) [not null, note: 'BR-08']
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'tags_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'tags_sync_idx']
+  }
+
+  Note: 'The owner\'s own labels. A rename shows on every transaction that carries the tag'
+}
+
+Table fiscus.transactions {
+  id uuid [pk, default: `uuidv7()`, note: 'A client may supply a UUIDv7 (EC-01, EC-02)']
+  type fiscus.transaction_type [not null]
+  status fiscus.transaction_status [not null, note: 'Confirmed or Unreviewed by source (FR-21). Trashed is deleted_at']
+
+  input_amount bigint [not null, note: 'What was entered, in input_currency_id\'s smallest unit']
+  input_currency_id uuid [not null, note: 'Any preferred currency; the account\'s by default']
+  exchange_rate "numeric(24,12)" [not null, default: 1, note: 'Account-currency units for 1 input-currency unit, in major units, at entry. Prefilled from the rates, editable']
+  account_id uuid [not null, note: 'The From account of a transfer']
+  converted_amount bigint [not null, note: 'What moved in the account, in its currency']
+  converted_currency_id uuid [not null, note: 'Always the account\'s currency (composite FK)']
+  to_account_id uuid [note: 'Transfers only']
+  to_amount bigint [note: 'Transfers only: what arrived, in the To account\'s currency']
+  to_currency_id uuid [note: 'Transfers only: always the To account\'s currency (composite FK)']
+  category_id uuid [note: 'Expense and income only; may be a subcategory']
+
+  occurred_on date [not null, note: 'The calendar date at entry (BR-04), or the TSV date (BR-05). Decides the pay cycle (BR-13)']
+  occurred_at timestamptz [note: 'NULL for imports, which have no time (BR-05)']
+  utc_offset_minutes smallint [note: 'The offset at entry (BR-04, EC-07)']
+
+  note varchar(200)
+  note_key text [not null, note: 'Generated: the note in lower case with all whitespace removed (BR-07, FD-20). The SQL is in README. Hand-copied']
+  description varchar(1000) [note: 'The Money Manager Description column, and free text (FD-24, BR-08)']
+  duplicate_of_id uuid [note: 'Set when BR-07 flags a possible duplicate; "Not a duplicate" clears it']
+
+  source fiscus.transaction_source [not null]
+  source_token_id uuid [note: 'core.api_tokens.id; no FK across schemas']
+  source_token_name varchar(60) [note: 'Copied, so it survives revocation (PRD 2.2)']
+  import_batch_id uuid
+  recurring_rule_id uuid
+  recurring_payday date [note: 'The cycle\'s nominal_payday, the BR-33 key']
+
+  deleted_at timestamptz [note: 'Set: Trashed. Purged 30 days later (BR-26)']
+  trash_reason fiscus.trash_reason
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1, note: 'EC-04']
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    (occurred_on, occurred_at, id) [name: 'transactions_list_idx', note: 'DESC on all three, WHERE deleted_at IS NULL. Keyset pages of 200 (FR-24, EC-22). Hand-copied']
+    (account_id, occurred_on) [name: 'transactions_account_idx', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (to_account_id, occurred_on) [name: 'transactions_to_account_idx', note: 'WHERE to_account_id IS NOT NULL AND deleted_at IS NULL. Hand-copied']
+    (category_id, occurred_on) [name: 'transactions_category_idx', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (occurred_on, occurred_at, id) [name: 'transactions_review_idx', note: 'WHERE status = \'unreviewed\' AND deleted_at IS NULL. Review, oldest first (FR-23). Hand-copied']
+    deleted_at [name: 'transactions_trash_idx', note: 'WHERE deleted_at IS NOT NULL. Trash and purge (BR-26). Hand-copied']
+    (source_token_id, created_at) [name: 'transactions_source_token_idx', note: 'WHERE source_token_id IS NOT NULL (EC-13). Hand-copied']
+    import_batch_id [name: 'transactions_import_batch_idx', note: 'WHERE import_batch_id IS NOT NULL. Hand-copied']
+    (occurred_on, account_id, converted_amount, type) [name: 'transactions_duplicate_idx', note: 'WHERE deleted_at IS NULL. BR-07, then note_key. Hand-copied']
+    (recurring_rule_id, recurring_payday) [unique, name: 'transactions_recurring_key', note: 'WHERE recurring_rule_id IS NOT NULL, trashed rows included (BR-33, EC-19). Hand-copied']
+    duplicate_of_id [name: 'transactions_duplicate_of_idx', note: 'WHERE duplicate_of_id IS NOT NULL. Hand-copied']
+    (sync_txid, id) [name: 'transactions_sync_idx']
+  }
+
+  checks {
+    `input_amount BETWEEN 1 AND 10000000000 AND converted_amount BETWEEN 1 AND 10000000000` [name: 'transactions_amounts_check']
+    `exchange_rate > 0` [name: 'transactions_exchange_rate_check']
+    `input_currency_id <> converted_currency_id OR (exchange_rate = 1 AND converted_amount = input_amount)` [name: 'transactions_same_currency_check']
+    `(type = 'transfer') = (to_account_id IS NOT NULL) AND (to_account_id IS NULL) = (to_amount IS NULL) AND (to_account_id IS NULL) = (to_currency_id IS NULL)` [name: 'transactions_transfer_check']
+    `to_amount IS NULL OR to_amount BETWEEN 1 AND 10000000000` [name: 'transactions_to_amount_check']
+    `to_account_id IS NULL OR to_account_id <> account_id` [name: 'transactions_transfer_accounts_check']
+    `(type = 'transfer') = (category_id IS NULL)` [name: 'transactions_category_check']
+    `(occurred_at IS NULL) = (utc_offset_minutes IS NULL)` [name: 'transactions_time_check']
+    `utc_offset_minutes IS NULL OR utc_offset_minutes BETWEEN -840 AND 840` [name: 'transactions_offset_check']
+    `occurred_at IS NULL OR occurred_on = ((occurred_at AT TIME ZONE 'UTC') + make_interval(mins => utc_offset_minutes))::date` [name: 'transactions_occurred_on_check']
+    `(deleted_at IS NULL) = (trash_reason IS NULL)` [name: 'transactions_trash_check']
+    `(source IN ('api', 'ingest')) = (source_token_id IS NOT NULL) AND (source_token_id IS NULL) = (source_token_name IS NULL)` [name: 'transactions_source_token_check']
+    `(source = 'import') = (import_batch_id IS NOT NULL)` [name: 'transactions_source_import_check']
+    `(source = 'recurring') = (recurring_rule_id IS NOT NULL) AND (recurring_rule_id IS NULL) = (recurring_payday IS NULL)` [name: 'transactions_source_recurring_check']
+    `duplicate_of_id IS NULL OR duplicate_of_id <> id` [name: 'transactions_duplicate_of_check']
+  }
+
+  Note: '''
+  Five money columns: input amount and currency, exchange rate, converted amount
+  and currency. The converted side is always the account\'s currency. A transfer
+  adds the arriving side (to_amount, to_currency_id).
+  The base value for budgets is not stored; README › Money and currencies gives the rule.
+  A category\'s kind must match the type (expense or income); the domain checks it.
+  BR-06 (at most 1 day ahead) is checked by the domain, which knows "now".
+  Physical deletes (the purge) write fiscus.sync_tombstones.
+  '''
+}
+
+Ref transactions_input_currency_id_fkey: fiscus.transactions.input_currency_id > fiscus.currencies.id [delete: restrict]
+Ref transactions_account_fkey: fiscus.transactions.(account_id, converted_currency_id) > fiscus.accounts.(id, currency_id) [delete: restrict]
+Ref transactions_to_account_fkey: fiscus.transactions.(to_account_id, to_currency_id) > fiscus.accounts.(id, currency_id) [delete: restrict]
+Ref transactions_category_id_fkey: fiscus.transactions.category_id > fiscus.categories.id [delete: restrict]
+Ref transactions_duplicate_of_id_fkey: fiscus.transactions.duplicate_of_id > fiscus.transactions.id [delete: set null]
+Ref transactions_import_batch_id_fkey: fiscus.transactions.import_batch_id > fiscus.import_batches.id [delete: restrict]
+Ref transactions_recurring_rule_id_fkey: fiscus.transactions.recurring_rule_id > fiscus.recurring_rules.id [delete: restrict]
+
+Table fiscus.transaction_tags {
+  transaction_id uuid [not null]
+  tag_id uuid [not null]
+
+  indexes {
+    (transaction_id, tag_id) [pk]
+    tag_id [name: 'transaction_tags_tag_id_idx']
+  }
+
+  Note: 'Travels inside its transaction; fiscus.touch_parent bumps the parent. Up to 5 per transaction (BR-08), checked by the domain'
+}
+
+Ref transaction_tags_transaction_id_fkey: fiscus.transaction_tags.transaction_id > fiscus.transactions.id [delete: cascade]
+Ref transaction_tags_tag_id_fkey: fiscus.transaction_tags.tag_id > fiscus.tags.id [delete: restrict]
+
+Table fiscus.transaction_revisions {
+  id uuid [pk, default: `uuidv7()`]
+  transaction_id uuid [not null]
+  action fiscus.revision_action [not null]
+  actor_kind fiscus.actor_kind [not null]
+  actor_id uuid [note: 'The token id; NULL for the owner and the scheduler']
+  actor_name varchar(60) [not null, note: '"You", the token name or the rule name, copied']
+  changes jsonb [not null, default: `'{}'`, note: '{field: [old, new]} (FR-22, AC-10.3). For created: the source']
+  created_at timestamptz [not null, default: `now()`]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    (transaction_id, created_at) [name: 'transaction_revisions_transaction_idx']
+    (sync_txid, id) [name: 'transaction_revisions_sync_idx']
+  }
+
+  Note: 'Append-only (fiscus.append_only). A purge deletes the history with its transaction (PRD 4.3)'
+}
+
+Ref transaction_revisions_transaction_id_fkey: fiscus.transaction_revisions.transaction_id > fiscus.transactions.id [delete: cascade]
+
+Table fiscus.templates {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null]
+  type fiscus.transaction_type [not null]
+  input_amount bigint [note: 'Optional; in input_currency_id']
+  input_currency_id uuid
+  account_id uuid
+  to_account_id uuid
+  category_id uuid
+  note varchar(200)
+  description varchar(1000)
+  sort_order integer [not null, default: 0]
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'templates_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'templates_sync_idx']
+  }
+
+  checks {
+    `(input_amount IS NULL) = (input_currency_id IS NULL)` [name: 'templates_amount_currency_check']
+    `input_amount IS NULL OR input_amount BETWEEN 1 AND 10000000000` [name: 'templates_amount_check']
+    `type = 'transfer' OR to_account_id IS NULL` [name: 'templates_to_account_check']
+    `type <> 'transfer' OR category_id IS NULL` [name: 'templates_category_check']
+    `to_account_id IS NULL OR account_id IS NULL OR to_account_id <> account_id` [name: 'templates_transfer_accounts_check']
+  }
+
+  Note: 'Saved presets for quick entry (FR-18, ADR-0002 §6). Any field may be left for entry time'
+}
+
+Ref templates_input_currency_id_fkey: fiscus.templates.input_currency_id > fiscus.currencies.id [delete: restrict]
+Ref templates_account_id_fkey: fiscus.templates.account_id > fiscus.accounts.id [delete: restrict]
+Ref templates_to_account_id_fkey: fiscus.templates.to_account_id > fiscus.accounts.id [delete: restrict]
+Ref templates_category_id_fkey: fiscus.templates.category_id > fiscus.categories.id [delete: restrict]
+
+Table fiscus.template_tags {
+  template_id uuid [not null]
+  tag_id uuid [not null]
+
+  indexes {
+    (template_id, tag_id) [pk]
+    tag_id [name: 'template_tags_tag_id_idx']
+  }
+
+  Note: 'Travels inside its template'
+}
+
+Ref template_tags_template_id_fkey: fiscus.template_tags.template_id > fiscus.templates.id [delete: cascade]
+Ref template_tags_tag_id_fkey: fiscus.template_tags.tag_id > fiscus.tags.id [delete: restrict]
+
+// ---------------------------------------------------------------- budget
+
+TableGroup budget {
+  fiscus.budget_settings
+  fiscus.income_components
+  fiscus.holidays
+  fiscus.budget_items
+  fiscus.budget_item_categories
+  fiscus.budget_item_transfer_accounts
+  fiscus.pay_cycles
+}
+
+Table fiscus.budget_settings {
+  id uuid [pk, default: `uuidv7()`]
+  payday_day smallint [note: 'Day of the month; NULL until set (AC-13.4). Moved to the previous working day (BR-10)']
+  one_off_buffer_bp integer [not null, default: 11500, note: '1.15 in basis points (BR-19, BR-22)']
+  monthly_buffer_bp integer [not null, default: 15000, note: '1.5 in basis points (BR-20, BR-22)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `(true)` [unique, name: 'budget_settings_singleton_key', note: 'Hand-copied']
+  }
+
+  checks {
+    `payday_day IS NULL OR payday_day BETWEEN 1 AND 28` [name: 'budget_settings_payday_day_check']
+    `one_off_buffer_bp >= 10000 AND monthly_buffer_bp >= 10000` [name: 'budget_settings_buffers_check']
+  }
+
+  Note: '''
+  One row, seeded with no payday. Here rather than in core.settings so the
+  phone can work out cycles and afford checks offline (ADR-0002 §6). Changed online
+  only, because a payday change moves cycle dates (EC-09).
+  '''
+}
+
+Table fiscus.income_components {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null, note: 'The owner\'s own label, such as a salary, a deduction or a business']
+  amount bigint [not null, note: 'Per cycle, in the base currency. A negative amount is a deduction']
+  sort_order integer [not null, default: 0]
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'income_components_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'income_components_sync_idx']
+  }
+
+  checks {
+    `amount BETWEEN -10000000000 AND 10000000000` [name: 'income_components_amount_check']
+  }
+
+  Note: '''
+  The owner's income lines, whatever the job: salary, business, freelance work.
+  Cycle income = the sum of the live lines (BR-12). Fiscus does not count
+  working days for income. Amounts live only in the database.
+  '''
+}
+
+Table fiscus.holidays {
+  id uuid [pk, default: `uuidv7()`]
+  holiday_date date [not null]
+  name varchar(100) [not null]
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    holiday_date [unique, name: 'holidays_holiday_date_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'holidays_sync_idx']
+  }
+
+  Note: 'Per year, seeded from the budgeting skill\'s list (FR-30, A-13). A year with no rows is "missing" (EC-08)'
+}
+
+Table fiscus.budget_items {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null]
+  amount bigint [not null, default: 0, note: 'Per cycle, in the base currency']
+  projection fiscus.projection_type [not null, note: 'BR-15']
+  minimum_amount bigint [note: 'Set exactly when projection = minimum']
+  kind fiscus.budget_item_kind [not null, note: 'BR-16']
+  is_catch_all boolean [not null, default: false, note: 'Lain-lain: catches expenses no item counts (BR-14)']
+  sort_order integer [not null, default: 0]
+  deleted_at timestamptz [note: 'Applies from the open cycle on; closed cycles keep it in their snapshot (BR-23)']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'budget_items_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    `(true)` [unique, name: 'budget_items_catch_all_key', note: 'WHERE is_catch_all. Hand-copied']
+    (sync_txid, id) [name: 'budget_items_sync_idx']
+  }
+
+  checks {
+    `amount >= 0` [name: 'budget_items_amount_check']
+    `(projection = 'minimum') = (minimum_amount IS NOT NULL)` [name: 'budget_items_minimum_check']
+    `minimum_amount IS NULL OR minimum_amount >= 0` [name: 'budget_items_minimum_amount_check']
+    `NOT is_catch_all OR (amount = 0 AND kind = 'flexible')` [name: 'budget_items_catch_all_check']
+  }
+
+  Note: 'Seeded without amounts (FR-17). Guarded by fiscus.guard_catch_all'
+}
+
+Table fiscus.budget_item_categories {
+  budget_item_id uuid [not null]
+  category_id uuid [not null, note: 'A category or a subcategory']
+
+  indexes {
+    (budget_item_id, category_id) [pk]
+    category_id [unique, name: 'budget_item_categories_category_id_key', note: 'A category counts toward one item (FD-13)']
+  }
+
+  Note: 'Travels inside its budget item. Removed when the item is deleted; closed cycles keep their links in the snapshot'
+}
+
+Ref budget_item_categories_budget_item_id_fkey: fiscus.budget_item_categories.budget_item_id > fiscus.budget_items.id [delete: cascade]
+Ref budget_item_categories_category_id_fkey: fiscus.budget_item_categories.category_id > fiscus.categories.id [delete: restrict]
+
+Table fiscus.budget_item_transfer_accounts {
+  budget_item_id uuid [not null]
+  account_id uuid [not null, note: 'Transfers into this account count, such as Stockbit and Pluang for Investasi (BR-14, AC-09.2)']
+
+  indexes {
+    (budget_item_id, account_id) [pk]
+    account_id [unique, name: 'budget_item_transfer_accounts_account_id_key']
+  }
+
+  Note: 'Travels inside its budget item. Other transfers never count (BR-14)'
+}
+
+Ref budget_item_transfer_accounts_budget_item_id_fkey: fiscus.budget_item_transfer_accounts.budget_item_id > fiscus.budget_items.id [delete: cascade]
+Ref budget_item_transfer_accounts_account_id_fkey: fiscus.budget_item_transfer_accounts.account_id > fiscus.accounts.id [delete: restrict]
+
+Table fiscus.pay_cycles {
+  id uuid [pk, default: `uuidv7()`]
+  nominal_payday date [not null, unique, note: 'The payday rule\'s date before any move, such as 2026-09-25. Stable across EC-09']
+  period daterange [not null, note: '[payday, next payday). Named after the month it ends in (FD-28)']
+  status fiscus.cycle_status [not null]
+  opened_at timestamptz
+  closed_at timestamptz
+  snapshot jsonb [note: 'Set when the cycle closes (BR-23). README › Pay cycles lists its fields']
+  snapshot_version smallint
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `(true)` [unique, name: 'pay_cycles_open_key', note: 'WHERE status = \'open\'. Hand-copied']
+    `(true)` [unique, name: 'pay_cycles_upcoming_key', note: 'WHERE status = \'upcoming\'. Hand-copied']
+    (sync_txid, id) [name: 'pay_cycles_sync_idx']
+  }
+
+  checks {
+    `NOT isempty(period) AND NOT lower_inf(period) AND NOT upper_inf(period)` [name: 'pay_cycles_period_check']
+    `(status = 'upcoming') = (opened_at IS NULL)` [name: 'pay_cycles_opened_check']
+    `(status = 'closed') = (closed_at IS NOT NULL)` [name: 'pay_cycles_closed_check']
+    `(status = 'closed') = (snapshot IS NOT NULL) AND (snapshot IS NULL) = (snapshot_version IS NULL)` [name: 'pay_cycles_snapshot_check']
+  }
+
+  Note: '''
+  Only the cycles Fiscus runs: one upcoming, one open, and the closed ones (PRD 4.3).
+  Earlier cycles, which hold imported history, are computed by the domain (FD-14).
+  EXCLUDE USING gist (period WITH &&) as pay_cycles_period_excl. Hand-copied.
+  Transactions are not linked: a transaction\'s cycle is the one whose period
+  contains its occurred_on (BR-13), so moving dates moves nothing (EC-09).
+  Closed rows cannot change (fiscus.guard_closed_cycle).
+  '''
+}
+
+// ---------------------------------------------------------------- rules
+
+TableGroup rules {
+  fiscus.categorisation_rules
+  fiscus.recurring_rules
+  fiscus.recurring_rule_tags
+}
+
+Table fiscus.categorisation_rules {
+  id uuid [pk, default: `uuidv7()`]
+  sort_order integer [not null, default: 0, note: 'List order; the first match wins (BR-32)']
+  match_text varchar(100) [not null, note: 'Case-insensitive "contains" on the note']
+  account_id uuid [note: 'Optional condition']
+  window_start time [note: 'Optional, in the transaction\'s local time; may cross midnight']
+  window_end time
+  set_category_id uuid
+  set_note_template varchar(200) [note: 'Syntax per FD-26']
+  enabled boolean [not null, default: true, note: 'Switched off when its category is deactivated']
+  deleted_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    sort_order [name: 'categorisation_rules_sort_order_idx', note: 'WHERE deleted_at IS NULL AND enabled. Hand-copied']
+    (sync_txid, id) [name: 'categorisation_rules_sync_idx']
+  }
+
+  checks {
+    `length(match_text) >= 1` [name: 'categorisation_rules_match_text_check']
+    `(window_start IS NULL) = (window_end IS NULL)` [name: 'categorisation_rules_window_check']
+    `set_category_id IS NOT NULL OR set_note_template IS NOT NULL` [name: 'categorisation_rules_set_check']
+  }
+
+  Note: 'Applied on create only, never to existing rows (BR-32, FD-09)'
+}
+
+Ref categorisation_rules_account_id_fkey: fiscus.categorisation_rules.account_id > fiscus.accounts.id [delete: restrict]
+Ref categorisation_rules_set_category_id_fkey: fiscus.categorisation_rules.set_category_id > fiscus.categories.id [delete: restrict]
+
+Table fiscus.recurring_rules {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null]
+  type fiscus.transaction_type [not null]
+  input_amount bigint [not null]
+  input_currency_id uuid [not null, note: 'The rate and converted amount come from current rates when the rule runs']
+  account_id uuid [not null]
+  to_account_id uuid
+  category_id uuid
+  note varchar(200)
+  description varchar(1000)
+  status fiscus.rule_status [not null, default: 'active']
+  paused_reason fiscus.pause_reason
+  sort_order integer [not null, default: 0]
+  deleted_at timestamptz [note: 'Transactions it created stay']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    `lower(name)` [unique, name: 'recurring_rules_name_key', note: 'WHERE deleted_at IS NULL. Hand-copied']
+    (sync_txid, id) [name: 'recurring_rules_sync_idx']
+  }
+
+  checks {
+    `input_amount BETWEEN 1 AND 10000000000` [name: 'recurring_rules_amount_check']
+    `(type = 'transfer') = (to_account_id IS NOT NULL)` [name: 'recurring_rules_transfer_check']
+    `to_account_id IS NULL OR to_account_id <> account_id` [name: 'recurring_rules_transfer_accounts_check']
+    `(type = 'transfer') = (category_id IS NULL)` [name: 'recurring_rules_category_check']
+    `(status = 'paused') = (paused_reason IS NOT NULL)` [name: 'recurring_rules_paused_check']
+  }
+
+  Note: '''
+  Creates one Unreviewed transaction per cycle, dated the cycle\'s first day
+  (FR-32, BR-33, A-09, FD-15). "Last run" is the newest recurring_payday among its
+  transactions, so no column is needed.
+  '''
+}
+
+Ref recurring_rules_input_currency_id_fkey: fiscus.recurring_rules.input_currency_id > fiscus.currencies.id [delete: restrict]
+Ref recurring_rules_account_id_fkey: fiscus.recurring_rules.account_id > fiscus.accounts.id [delete: restrict]
+Ref recurring_rules_to_account_id_fkey: fiscus.recurring_rules.to_account_id > fiscus.accounts.id [delete: restrict]
+Ref recurring_rules_category_id_fkey: fiscus.recurring_rules.category_id > fiscus.categories.id [delete: restrict]
+
+Table fiscus.recurring_rule_tags {
+  recurring_rule_id uuid [not null]
+  tag_id uuid [not null]
+
+  indexes {
+    (recurring_rule_id, tag_id) [pk]
+    tag_id [name: 'recurring_rule_tags_tag_id_idx']
+  }
+
+  Note: 'Travels inside its rule'
+}
+
+Ref recurring_rule_tags_recurring_rule_id_fkey: fiscus.recurring_rule_tags.recurring_rule_id > fiscus.recurring_rules.id [delete: cascade]
+Ref recurring_rule_tags_tag_id_fkey: fiscus.recurring_rule_tags.tag_id > fiscus.tags.id [delete: restrict]
+
+// ---------------------------------------------------------------- imports
+
+TableGroup imports {
+  fiscus.import_batches
+}
+
+Table fiscus.import_batches {
+  id uuid [pk, default: `uuidv7()`]
+  status fiscus.import_status [not null, default: 'uploaded']
+  file_id uuid [note: 'core.files.id; no FK across schemas. Cleared when the file is deleted']
+  file_name varchar(255) [not null, note: 'Shown on UI-FIS-40; never logged (NFR-11)']
+  file_sha256 bytea [not null]
+  file_size bigint [not null]
+  date_format fiscus.date_format [not null, default: 'mdy']
+  row_count integer
+  resolutions jsonb [not null, default: `'{}'`, note: 'The owner\'s mappings, skipped lines and duplicates imported anyway (AC-07.4, FD-19)']
+  imported_count integer
+  skipped_count integer
+  duplicate_skipped_count integer
+  error jsonb [note: 'Failed only: {line, column, message}']
+  uploaded_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null, note: '24 hours after upload, for Uploaded and Previewed batches']
+  previewed_at timestamptz
+  committed_at timestamptz
+  rollback_until timestamptz [note: '7 days after commit (BR-27)']
+  rolled_back_at timestamptz
+  discarded_at timestamptz
+  failed_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+
+  indexes {
+    file_sha256 [name: 'import_batches_file_sha256_idx', note: 'Spots a re-upload of the same file']
+    (status, expires_at) [name: 'import_batches_expiry_idx']
+    (sync_txid, id) [name: 'import_batches_sync_idx']
+  }
+
+  checks {
+    `file_size BETWEEN 1 AND 10485760` [name: 'import_batches_file_size_check']
+    `row_count IS NULL OR row_count BETWEEN 0 AND 100000` [name: 'import_batches_row_count_check']
+    `status NOT IN ('previewed', 'committed', 'rolled_back') OR previewed_at IS NOT NULL` [name: 'import_batches_previewed_check']
+    `(status IN ('committed', 'rolled_back')) = (committed_at IS NOT NULL) AND (committed_at IS NULL) = (rollback_until IS NULL) AND (committed_at IS NULL) = (imported_count IS NULL)` [name: 'import_batches_committed_check']
+    `(status = 'rolled_back') = (rolled_back_at IS NOT NULL)` [name: 'import_batches_rolled_back_check']
+    `(status = 'discarded') = (discarded_at IS NOT NULL)` [name: 'import_batches_discarded_check']
+    `(status = 'failed') = (failed_at IS NOT NULL) AND (status = 'failed') = (error IS NOT NULL)` [name: 'import_batches_failed_check']
+  }
+
+  Note: '''
+  One Money Manager TSV upload and its lifecycle (PRD 4.3, FR-15, FR-16, BR-27).
+  The preview itself is computed from the stored file each time (FR-15).
+  Terminal states cannot change, and committed can only become rolled_back
+  (fiscus.guard_import_batch). Batches are never deleted.
+  '''
+}
+
+// ---------------------------------------------------------------- sync and metrics
+
+TableGroup sync {
+  fiscus.sync_tombstones
+  fiscus.sync_state
+  fiscus.entry_timings
+}
+
+Table fiscus.sync_tombstones {
+  table_name varchar(63) [not null]
+  row_id uuid [not null]
+  sync_txid xid8 [not null, default: `pg_current_xact_id()`]
+  deleted_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (table_name, row_id) [pk]
+    (sync_txid, row_id) [name: 'sync_tombstones_sync_idx']
+  }
+
+  Note: 'Written by fiscus.record_tombstone on physical deletes (ADR-0002 §4). Kept 90 days'
+}
+
+Table fiscus.sync_state {
+  id uuid [pk, default: `uuidv7()`]
+  tombstones_purged_through xid8 [not null, default: `'0'::xid8`, note: 'A pull cursor below this gets 410 cursor_expired']
+  updated_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    `(true)` [unique, name: 'sync_state_singleton_key', note: 'Hand-copied']
+  }
+
+  Note: 'Not synced. One row'
+}
+
+Table fiscus.entry_timings {
+  id uuid [pk, default: `uuidv7()`]
+  transaction_id uuid [not null, note: 'No FK, so the metric outlives a purge']
+  client fiscus.entry_client [not null]
+  duration_ms integer [not null, note: 'From opening quick entry to the saved confirmation (PRD 1.2)']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    created_at [name: 'entry_timings_created_at_idx']
+  }
+
+  checks {
+    `duration_ms > 0` [name: 'entry_timings_duration_ms_check']
+  }
+
+  Note: 'Not synced. Feeds the ≤ 10 s median (PRD 1.2, Gate B)'
+}

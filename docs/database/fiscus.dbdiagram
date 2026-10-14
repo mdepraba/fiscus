@@ -1,0 +1,630 @@
+{
+  "version": "3.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "relationshipMode": "All",
+    "tablePositions": [
+      {
+        "name": "currencies",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 534
+      },
+      {
+        "name": "account_groups",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 996
+      },
+      {
+        "name": "accounts",
+        "schemaName": "fiscus",
+        "x": 697.2138671875,
+        "y": 638
+      },
+      {
+        "name": "categories",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 1350
+      },
+      {
+        "name": "tags",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 3120
+      },
+      {
+        "name": "transactions",
+        "schemaName": "fiscus",
+        "x": 1956.8369140625,
+        "y": 534
+      },
+      {
+        "name": "transaction_tags",
+        "schemaName": "fiscus",
+        "x": 2578.15966796875,
+        "y": 900
+      },
+      {
+        "name": "transaction_revisions",
+        "schemaName": "fiscus",
+        "x": 2578.15966796875,
+        "y": 534
+      },
+      {
+        "name": "templates",
+        "schemaName": "fiscus",
+        "x": 1342.244140625,
+        "y": 617
+      },
+      {
+        "name": "template_tags",
+        "schemaName": "fiscus",
+        "x": 1956.8369140625,
+        "y": 1700
+      },
+      {
+        "name": "budget_settings",
+        "schemaName": "fiscus",
+        "x": 1487.49169921875,
+        "y": 12
+      },
+      {
+        "name": "income_components",
+        "schemaName": "fiscus",
+        "x": 1853.95703125,
+        "y": 12
+      },
+      {
+        "name": "holidays",
+        "schemaName": "fiscus",
+        "x": 1144.25244140625,
+        "y": 12
+      },
+      {
+        "name": "budget_items",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 1748
+      },
+      {
+        "name": "budget_item_categories",
+        "schemaName": "fiscus",
+        "x": 697.2138671875,
+        "y": 1122
+      },
+      {
+        "name": "budget_item_transfer_accounts",
+        "schemaName": "fiscus",
+        "x": 1342.244140625,
+        "y": 1207
+      },
+      {
+        "name": "pay_cycles",
+        "schemaName": "fiscus",
+        "x": 2198.9921875,
+        "y": 12
+      },
+      {
+        "name": "categorisation_rules",
+        "schemaName": "fiscus",
+        "x": 1342.244140625,
+        "y": 1349
+      },
+      {
+        "name": "recurring_rules",
+        "schemaName": "fiscus",
+        "x": 1342.244140625,
+        "y": 1876
+      },
+      {
+        "name": "recurring_rule_tags",
+        "schemaName": "fiscus",
+        "x": 1956.8369140625,
+        "y": 1842
+      },
+      {
+        "name": "import_batches",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 2242
+      },
+      {
+        "name": "sync_tombstones",
+        "schemaName": "fiscus",
+        "x": 12,
+        "y": 12
+      },
+      {
+        "name": "sync_state",
+        "schemaName": "fiscus",
+        "x": 357.55615234375,
+        "y": 12
+      },
+      {
+        "name": "entry_timings",
+        "schemaName": "fiscus",
+        "x": 768.76611328125,
+        "y": 12
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": [
+      {
+        "firstFieldNames": [
+          "account_group_id"
+        ],
+        "firstTableName": "accounts",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "account_groups",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "currency_id"
+        ],
+        "firstTableName": "accounts",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "currencies",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "parent_id"
+        ],
+        "firstTableName": "categories",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "input_currency_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "currencies",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "account_id",
+          "converted_currency_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id",
+          "currency_id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "to_account_id",
+          "to_currency_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id",
+          "currency_id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "category_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "duplicate_of_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "transactions",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "import_batch_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "import_batches",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "recurring_rule_id"
+        ],
+        "firstTableName": "transactions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "recurring_rules",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "transaction_id"
+        ],
+        "firstTableName": "transaction_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "transactions",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "tag_id"
+        ],
+        "firstTableName": "transaction_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "tags",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "transaction_id"
+        ],
+        "firstTableName": "transaction_revisions",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "transactions",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "input_currency_id"
+        ],
+        "firstTableName": "templates",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "currencies",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "account_id"
+        ],
+        "firstTableName": "templates",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "to_account_id"
+        ],
+        "firstTableName": "templates",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "category_id"
+        ],
+        "firstTableName": "templates",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "template_id"
+        ],
+        "firstTableName": "template_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "templates",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "tag_id"
+        ],
+        "firstTableName": "template_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "tags",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "budget_item_id"
+        ],
+        "firstTableName": "budget_item_categories",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "budget_items",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "category_id"
+        ],
+        "firstTableName": "budget_item_categories",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "budget_item_id"
+        ],
+        "firstTableName": "budget_item_transfer_accounts",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "budget_items",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "account_id"
+        ],
+        "firstTableName": "budget_item_transfer_accounts",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "account_id"
+        ],
+        "firstTableName": "categorisation_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "set_category_id"
+        ],
+        "firstTableName": "categorisation_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "input_currency_id"
+        ],
+        "firstTableName": "recurring_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "currencies",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "account_id"
+        ],
+        "firstTableName": "recurring_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "to_account_id"
+        ],
+        "firstTableName": "recurring_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "accounts",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "category_id"
+        ],
+        "firstTableName": "recurring_rules",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "categories",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "recurring_rule_id"
+        ],
+        "firstTableName": "recurring_rule_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "recurring_rules",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "tag_id"
+        ],
+        "firstTableName": "recurring_rule_tags",
+        "firstSchemaName": "fiscus",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "tags",
+        "secondSchemaName": "fiscus",
+        "secondRelation": "1",
+        "checkPoints": []
+      }
+    ]
+  },
+  "views": {}
+}

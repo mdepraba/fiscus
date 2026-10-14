@@ -1,0 +1,351 @@
+// The `core` schema: the platform every module plugs into (Phase 1).
+// Conventions, the hand-copied SQL and the coverage table are in README.md.
+// Core tables are online only and never sync to the phone (ADR-0002 §6).
+
+Project fiscus_core {
+  database_type: 'PostgreSQL'
+  Note: 'PostgreSQL 18. Ids default to uuidv7(). See docs/database/README.md'
+}
+
+// ---------------------------------------------------------------- enums
+
+Enum core.auth_method {
+  passkey
+  password_totp
+  recovery_code
+  sign_in_link
+}
+
+Enum core.session_kind {
+  full [note: 'A normal 30-day session (FR-03)']
+  setup [note: 'Can only finish the setup wizard (FD-05)']
+}
+
+Enum core.sign_in_link_purpose {
+  setup [note: 'Empty install: creates the owner (FD-05)']
+  reset [note: 'After the reset command (FR-05)']
+}
+
+Enum core.token_origin {
+  owner [note: 'Created on UI-CORE-04']
+  pairing [note: 'Created by pairing a phone (ADR-0002 §7)']
+}
+
+Enum core.caller_kind {
+  owner
+  token
+}
+
+Enum core.idempotency_state {
+  in_flight
+  completed
+}
+
+Enum core.actor_kind {
+  owner
+  token
+  scheduler
+  system
+  cli [note: 'The server reset command (FR-05)']
+}
+
+Enum core.file_purpose {
+  import
+  export
+}
+
+Enum core.run_status {
+  running
+  succeeded
+  failed
+}
+
+Enum core.backup_kind {
+  nightly
+  manual [note: '"Run now"']
+}
+
+Enum core.export_status {
+  running
+  ready
+  failed
+  expired
+}
+
+// ---------------------------------------------------------------- sign-in
+
+Table core.owner {
+  id uuid [pk, default: `uuidv7()`]
+  password_hash text [note: 'argon2id via Bun.password (FR-02, NFR-10). NULL until setup sets it']
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+
+  indexes {
+    `(true)` [unique, name: 'owner_singleton_key', note: 'One owner (PRD 2). Hand-copied']
+  }
+
+  Note: 'The one human account. Created by the reset command on an empty install (FD-05)'
+}
+
+Table core.passkeys {
+  id uuid [pk, default: `uuidv7()`]
+  credential_id bytea [not null, unique]
+  public_key bytea [not null]
+  sign_count bigint [not null, default: 0]
+  transports "text[]" [not null, default: `'{}'`]
+  aaguid uuid
+  backed_up boolean [not null, default: false]
+  name varchar(60) [not null, note: 'Defaults to the device name (UI-CORE-02)']
+  created_at timestamptz [not null, default: `now()`]
+  last_used_at timestamptz
+
+  Note: 'WebAuthn credentials (FR-02). Removing one deletes the row; the reset command deletes all'
+}
+
+Table core.totp_factors {
+  id uuid [pk, default: `uuidv7()`]
+  secret_encrypted bytea [not null, note: 'Encrypted with a key from /srv/fiscus/.env (NFR-10)']
+  confirmed_at timestamptz [note: 'NULL while setup waits for the first right code']
+  last_used_step bigint [note: 'The last accepted 30-second step, so a code cannot be replayed']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    `(true)` [unique, name: 'totp_factors_confirmed_key', note: 'WHERE confirmed_at IS NOT NULL: one live authenticator app. Hand-copied']
+  }
+}
+
+Table core.recovery_codes {
+  id uuid [pk, default: `uuidv7()`]
+  set_id uuid [not null, note: 'Regenerating deletes the old set (FR-04)']
+  code_hash text [not null, note: 'argon2id']
+  used_at timestamptz [note: 'Burned on use (AC-02.1, AC-02.2)']
+  created_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    set_id [name: 'recovery_codes_set_id_idx']
+  }
+}
+
+Table core.sign_in_links {
+  id uuid [pk, default: `uuidv7()`]
+  code_hash bytea [not null, unique, note: 'SHA-256 of the one-time code']
+  purpose core.sign_in_link_purpose [not null]
+  expires_at timestamptz [not null, note: '15 minutes after creation (FR-05)']
+  used_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table core.sessions {
+  id uuid [pk, default: `uuidv7()`]
+  token_hash bytea [not null, unique, note: 'SHA-256 of the cookie value']
+  kind core.session_kind [not null, default: 'full']
+  auth_method core.auth_method [not null, note: 'recovery_code shows the "New second factor" banner (AC-02.1)']
+  device_name varchar(100) [not null]
+  created_at timestamptz [not null, default: `now()`]
+  last_seen_at timestamptz [not null, default: `now()`, note: 'Written at most once a minute']
+  expires_at timestamptz [not null, note: '30 days for full sessions (FR-03)']
+  revoked_at timestamptz
+
+  indexes {
+    expires_at [name: 'sessions_expires_at_idx']
+  }
+
+  Note: 'Listed and revoked per device in Settings (FR-03)'
+}
+
+// ---------------------------------------------------------------- tokens
+
+Table core.api_tokens {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(60) [not null]
+  scopes "text[]" [not null, note: 'Scope ids come from module contracts, so core does not list them. A fiscus:ingest token has no other scope (FD-21), checked by the service']
+  token_hash bytea [not null, unique, note: 'SHA-256 of 32 random bytes; the value is shown once (BR-28, NFR-10)']
+  origin core.token_origin [not null, default: 'owner']
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  last_used_at timestamptz [note: 'Written at most once a minute (FR-06)']
+  expiry_warned_at timestamptz [note: 'The 7-day warning email (PRD 5.2, BG-09)']
+
+  checks {
+    `cardinality(scopes) >= 1` [name: 'api_tokens_scopes_check']
+    `expires_at > created_at AND expires_at <= created_at + interval '365 days'` [name: 'api_tokens_expires_at_check']
+  }
+
+  Note: '''
+  Status is derived, so no job flips it (PRD 4.3):
+  Revoked when revoked_at is set, Expired when expires_at has passed, otherwise Active.
+  Expired and revoked tokens are kept, so transactions can still name them (PRD 2.2).
+  '''
+}
+
+Table core.pairing_codes {
+  id uuid [pk, default: `uuidv7()`]
+  code_hash bytea [not null, unique]
+  device_name varchar(60) [not null, note: 'Becomes the token name']
+  expires_at timestamptz [not null]
+  used_at timestamptz
+  token_id uuid [note: 'The token the code was exchanged for']
+  created_at timestamptz [not null, default: `now()`]
+
+  Note: 'The web app shows a one-time code as a QR code; the phone exchanges it for a token (ADR-0002 §7)'
+}
+
+Ref pairing_codes_token_id_fkey: core.pairing_codes.token_id > core.api_tokens.id [delete: set null]
+
+// ---------------------------------------------------------------- requests
+
+Table core.idempotency_keys {
+  caller_kind core.caller_kind [not null]
+  caller_id uuid [not null, note: 'The owner id or the token id']
+  key varchar(64) [not null, note: 'The Idempotency-Key header, or a sync mutationId']
+  request_hash bytea [not null, note: 'SHA-256 of method, route and body. Same key, other hash: 422 (BR-09)']
+  state core.idempotency_state [not null, default: 'in_flight', note: 'in_flight: 409 idempotency_key_in_flight']
+  response_status smallint
+  response_body jsonb
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null, note: '24 hours after creation (BR-09)']
+
+  indexes {
+    (caller_kind, caller_id, key) [pk]
+    expires_at [name: 'idempotency_keys_expires_at_idx']
+  }
+
+  checks {
+    `length(key) BETWEEN 8 AND 64` [name: 'idempotency_keys_key_check']
+    `(state = 'completed') = (response_status IS NOT NULL)` [name: 'idempotency_keys_state_check']
+    `response_status IS NULL OR response_status < 500` [name: 'idempotency_keys_response_status_check']
+  }
+
+  Note: 'Saved in the create\'s own database transaction (BR-09). Responses of 500 and above are not kept'
+}
+
+// ---------------------------------------------------------------- audit and settings
+
+Table core.audit_log {
+  id uuid [pk, default: `uuidv7()`]
+  occurred_at timestamptz [not null, default: `now()`]
+  actor_kind core.actor_kind [not null]
+  actor_id uuid [note: 'The owner or token id']
+  actor_name varchar(100) [not null, note: '"You" or the token name, copied (NFR-12)']
+  module varchar(40) [not null]
+  action varchar(100) [not null, note: 'For example auth.sign_in_failed, fiscus.transaction.purged']
+  entity_type varchar(60)
+  entity_id uuid
+  before jsonb [note: 'Settings changes keep before and after values (FR-13)']
+  after jsonb
+  meta jsonb [note: 'A purge keeps id, amount and date here (PRD 4.3). Never a note or a file name']
+
+  indexes {
+    occurred_at [name: 'audit_log_occurred_at_idx']
+    (action, occurred_at) [name: 'audit_log_action_idx', note: 'Also counts failed sign-ins for the BR-29 lockout']
+    (entity_type, entity_id) [name: 'audit_log_entity_idx']
+  }
+
+  Note: 'Append-only (core.append_only). Kept 1 year (NFR-12)'
+}
+
+Table core.settings {
+  module varchar(40) [not null]
+  key varchar(100) [not null]
+  value jsonb [not null]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+  version integer [not null, default: 1]
+
+  indexes {
+    (module, key) [pk]
+  }
+
+  Note: '''
+  Namespaced by module id and typed by each module\'s contracts (BR-34, FR-13).
+  Holds core.server_timezone (BR-34, default Asia/Makassar).
+  Fiscus\'s payday rule and buffers are not here: they sync to the phone, so they live in fiscus.budget_settings.
+  '''
+}
+
+// ---------------------------------------------------------------- operations
+
+Table core.files {
+  id uuid [pk, default: `uuidv7()`]
+  purpose core.file_purpose [not null]
+  storage_path text [not null, unique, note: 'Under /srv/fiscus/data']
+  size_bytes bigint [not null]
+  sha256 bytea [not null]
+  content_type varchar(100) [not null]
+  created_at timestamptz [not null, default: `now()`]
+  expires_at timestamptz [not null, note: 'Imports and exports are kept 24 hours (NFR-15)']
+  deleted_at timestamptz [note: 'Set when the file is removed from disk']
+
+  indexes {
+    expires_at [name: 'files_expires_at_idx', note: 'WHERE deleted_at IS NULL. Hand-copied']
+  }
+}
+
+Table core.backups {
+  id uuid [pk, default: `uuidv7()`]
+  kind core.backup_kind [not null]
+  status core.run_status [not null, default: 'running']
+  attempt smallint [not null, default: 1, note: 'Up to 3, 15 minutes apart (EC-18)']
+  started_at timestamptz [not null, default: `now()`]
+  finished_at timestamptz
+  size_bytes bigint
+  snapshot_id varchar(64) [note: 'The restic snapshot id']
+  error text
+
+  indexes {
+    started_at [name: 'backups_started_at_idx']
+  }
+
+  Note: 'One row per attempt (FR-09). The hourly check reads the last success (FR-10)'
+}
+
+Table core.restore_tests {
+  id uuid [pk, default: `uuidv7()`]
+  status core.run_status [not null, default: 'running']
+  started_at timestamptz [not null, default: `now()`]
+  finished_at timestamptz
+  snapshot_id varchar(64)
+  table_counts jsonb [note: '{table: {production, restored}} (FR-11)']
+  mismatch_count integer
+  error text
+}
+
+Table core.exports {
+  id uuid [pk, default: `uuidv7()`]
+  status core.export_status [not null, default: 'running']
+  requested_at timestamptz [not null, default: `now()`]
+  finished_at timestamptz
+  expires_at timestamptz [note: '24 hours after it is ready (FR-12)']
+  file_id uuid
+  row_counts jsonb [note: 'The manifest: rows per module and table']
+  error text
+
+  indexes {
+    `(true)` [unique, name: 'exports_running_key', note: 'WHERE status = \'running\': one export at a time (AC-06.2). Hand-copied']
+  }
+}
+
+Ref exports_file_id_fkey: core.exports.file_id > core.files.id [delete: set null]
+
+Table core.alert_state {
+  kind varchar(60) [pk, note: 'backup_missing, disk_full, unit_restarts, sign_in_locked, token_expiring']
+  condition_since timestamptz [note: 'When the condition began; NULL when it is clear']
+  last_sent_at timestamptz [note: 'At most one email per 24 hours (FR-10)']
+  last_error text [note: 'A failed send, retried the next hour (PRD 5.1)']
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+Table core.schema_migrations {
+  module varchar(40) [not null]
+  name varchar(200) [not null]
+  checksum char(64) [not null, note: 'SHA-256 of the SQL file']
+  applied_at timestamptz [not null, default: `now()`]
+
+  indexes {
+    (module, name) [pk]
+  }
+
+  Note: 'Created by the libs/db runner itself, not by a migration (Stage 1)'
+}
