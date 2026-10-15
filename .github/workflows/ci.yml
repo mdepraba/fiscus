@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  # nx-set-shas reads the workflow runs to find the last green commit on main.
+  actions: read
 
 jobs:
   # NFR-20: boundaries, types and tests pass here before every deploy; the
@@ -50,7 +52,7 @@ jobs:
 
       # NFR-21: a one-module change finishes in 5 minutes or less, because
       # untouched projects replay from this cache instead of running.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
