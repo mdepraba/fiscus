@@ -11,7 +11,10 @@
       "!{projectRoot}/vitest.config.*",
       "!{projectRoot}/tsconfig.test.json"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/ci.yml",
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
   },
   "plugins": [
     {
@@ -20,11 +23,29 @@
         "typecheck": { "targetName": "typecheck" },
         "build": false
       }
+    },
+    {
+      "plugin": "@nx/vitest",
+      "options": { "testTargetName": "test" }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "serveTargetName": "serve",
+        "devTargetName": "dev",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static"
+      }
     }
   ],
   "targetDefaults": {
     "typecheck": { "cache": true, "inputs": ["default", "^production"] },
-    "test": { "cache": true, "inputs": ["default", "^production"] }
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^production", { "env": "DATABASE_URL" }, { "env": "CI" }]
+    },
+    "build": { "cache": true, "inputs": ["production", "^production"] }
   },
   "sync": { "applyChanges": true }
 }

@@ -7,11 +7,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Fiscus is a private personal finance app for one owner. The app, the project
 and the code are all called Fiscus (`fiscus` in code).
 
-The Nx workspace is set up (Bun, TypeScript, Biome, Husky, commitlint, CI),
-but it holds **no projects yet**. The code and the database are being
-designed around an offline-first Flutter phone app with sync (ADR-0002). The
-server and the web app stay TypeScript (Q-01), so the budget and cycle rules
-exist in TypeScript and Dart, kept equal by shared test cases.
+The Nx workspace holds the 9 TypeScript projects of PRD 5.4, scaffolded in
+Stage 1 with **no features yet**: `apps/api` (Nest on Fastify) answers
+`/health` (503 while PostgreSQL is down), and `apps/fiscus-web` (React on
+Vite) shows a placeholder. `libs/db` holds the pool, Drizzle and the
+migration runner; `libs/api` reads the configuration. The
+code and the database are designed around an offline-first Flutter phone
+app with sync (ADR-0002), which arrives in Stage 9 as
+`apps/fiscus-mobile/`. The server and the web app stay TypeScript (Q-01), so
+the budget and cycle rules exist in TypeScript and Dart, kept equal by shared
+test cases.
 
 ## Commands
 
@@ -19,10 +24,26 @@ Bun installs packages and runs scripts; Nx itself runs on Node 24. pnpm and
 npm are not used.
 
 - `bun install`: install, and set up the Husky hooks.
+- `cp .env.example .env` and `docker compose up -d postgres`: PostgreSQL 18
+  for development. Database tests run when `DATABASE_URL` is set, each in a
+  throwaway database from `@core/db/testing`. Without it they are skipped,
+  except in CI, which has its own PostgreSQL 18 and fails if the URL is
+  missing.
 - `bun run check`: Biome lint and format check. `bun run format` fixes.
-- `bun x nx affected -t typecheck test`: what CI runs after Biome.
+- `bun run boundaries`: the module rules of PRD 5.4 over the Nx graph.
+  Every project needs one `scope:` and one `type:` tag.
+- `bun run secrets`: no env files or secrets in tracked files (NFR-10). The
+  pre-commit hook runs it on staged files.
+- `bun x nx affected -t typecheck test build`: what CI runs after Biome.
+- `bun x nx run @app/api:serve` and `bun x nx run @app/fiscus-web:dev`: the
+  API on 127.0.0.1:3000, and the web app on localhost:4200 with a proxy to
+  the API.
 - `bun add -d <pkg> --cwd <project>`: add a library only when its
-  `docs/architecture/tech-stack.md` row is Chosen or Accepted.
+  `docs/architecture/tech-stack.md` row is Chosen or Accepted. A new
+  server-only package also goes in `SERVER_PACKAGES` in
+  `tools/boundaries/rules.mjs`. Bun gives each project only the packages it
+  declares, and the API bundle keeps third-party packages external, so
+  `apps/api` also declares every runtime package its libraries import.
 
 Commits follow Conventional Commits (commitlint), with the stage and the
 requirement IDs in the footer, such as `Refs: Stage 2, BR-09`.

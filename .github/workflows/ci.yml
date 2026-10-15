@@ -6,14 +6,38 @@ on:
 
 permissions:
   contents: read
+  # nx-set-shas reads the workflow runs to find the last green commit on main.
+  actions: read
 
 jobs:
+  # NFR-20: boundaries, types and tests pass here before every deploy; the
+  # host never builds.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    # ADR-0001 action 4: the database and api tests run against the same
+    # PostgreSQL major version as production. Each test file creates its own
+    # throwaway database on this server (@core/db/testing).
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: fiscus
+          POSTGRES_PASSWORD: fiscus
+          POSTGRES_DB: fiscus
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fiscus -d fiscus"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v7
         with:
+          # Nx compares against the base commit to decide what is affected.
           fetch-depth: 0
 
       # The Bun version comes from "packageManager" in package.json (tech-stack follow-up 2).
@@ -26,10 +50,48 @@ jobs:
         with:
           node-version: 24
 
+      # NFR-21: a one-module change finishes in 5 minutes or less, because
+      # untouched projects replay from this cache instead of running.
+      - uses: actions/cache@v6
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            nx-${{ runner.os }}-
+
       - run: bun install --frozen-lockfile
+        env:
+          # Git hooks are for local commits; CI has nothing to commit.
+          HUSKY: 0
 
       - uses: nrwl/nx-set-shas@v5
 
-      - run: bun x biome ci .
+      # TypeScript project references come from the project graph, so stale
+      # ones fail here rather than surprising someone locally.
+      - name: Check the workspace is in sync
+        run: bun x nx sync:check
 
-      - run: bun x nx affected -t typecheck test
+      # PRD 5.4: every project has one scope and one type tag, and modules
+      # meet only at contracts.
+      - name: Check module boundaries
+        run: |
+          bun run boundaries
+          bun run boundaries:test
+
+      # NFR-10: secrets live only in /srv/fiscus/.env. The pre-commit hook
+      # blocks them locally; this catches a commit made with --no-verify.
+      - name: Check for secrets and env files
+        run: |
+          bun run secrets
+          bun run secrets:test
+
+      - name: Lint and format
+        run: bun x biome ci .
+
+      # GitHub sets CI, so a database test that cannot find DATABASE_URL fails
+      # here instead of being skipped (libs/db/src/testing.ts).
+      - name: Typecheck, test and build what changed
+        run: bun x nx affected -t typecheck test build
+        env:
+          DATABASE_URL: postgres://fiscus:fiscus@localhost:5432/fiscus

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "out-tsc/test",
+    "tsBuildInfoFile": "out-tsc/test/tsconfig.test.tsbuildinfo",
+    "jsx": "react-jsx",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["vitest/globals", "vitest/importMeta", "node", "vite/client"]
+  },
+  "include": ["vite.config.mts", "src/**/*.test.ts", "src/**/*.test.tsx"],
+  "references": [{ "path": "./tsconfig.app.json" }]
+}

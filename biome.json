@@ -16,7 +16,8 @@
     "lineWidth": 100
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single" }
+    "formatter": { "quoteStyle": "single" },
+    "parser": { "unsafeParameterDecoratorsEnabled": true }
   },
   "linter": {
     "enabled": true,
@@ -24,5 +25,23 @@
   },
   "assist": {
     "actions": { "source": { "organizeImports": "on" } }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/api/**", "libs/api/**", "modules/*/api/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noStaticOnlyClass": "off"
+          },
+          "correctness": {
+            "noUnusedFunctionParameters": "off"
+          },
+          "style": {
+            "useImportType": "off"
+          }
+        }
+      }
+    }
+  ]
 }

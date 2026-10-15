@@ -1,0 +1,18 @@
+{
+  "name": "@app/fiscus-web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@core/ui": "workspace:*",
+    "@fiscus/web": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "nx": {
+    "tags": [
+      "scope:app",
+      "type:app"
+    ]
+  }
+}
