@@ -21,6 +21,7 @@ build is in and what comes next.
 | `tools/` | `boundaries/` and `secrets/`, the checks CI and the pre-commit hook run, and the esbuild plugin that keeps Nest's decorator metadata |
 | `nx.json`, `tsconfig.base.json` | The Nx workspace and the shared TypeScript settings |
 | `compose.yaml`, `.env.example` | PostgreSQL 18 for development, and the settings the API reads |
+| [deploy/](deploy/README.md) | The host runbook, the systemd unit and the PostgreSQL limits, drafted and not yet run on the host |
 | `biome.json` | Linting and formatting |
 | `.husky/`, `commitlint.config.mjs` | Git hooks: Biome and the secrets scan on staged files, Conventional Commits |
 | `.github/workflows/ci.yml` | The `verify` job, run on every push |

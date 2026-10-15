@@ -1,0 +1,54 @@
+; Install to /etc/systemd/system/fiscus.service (deploy/README.md, step 7).
+;
+; `current` is a symlink into releases/<sha>, swapped by the deploy just
+; before it restarts this unit, so a rollback is a symlink change and a
+; restart.
+
+[Unit]
+Description=Fiscus
+After=network-online.target postgresql@18-main.service
+Wants=network-online.target postgresql@18-main.service
+
+[Service]
+Type=simple
+User=fiscus
+Group=fiscus
+WorkingDirectory=/srv/fiscus/current
+; NFR-10: secrets live only in this file. systemd reads it as root before it
+; drops privileges, so the file stays root:root with mode 0600.
+EnvironmentFile=/srv/fiscus/.env
+Environment=NODE_ENV=production
+; Nothing is transpiled at run time, and the release is read-only anyway.
+Environment=BUN_RUNTIME_TRANSPILER_CACHE_PATH=0
+; FR-01: the API binds to 127.0.0.1:3000 by default, and `tailscale serve`
+; proxies HTTPS to it.
+ExecStart=/usr/local/bin/bun --smol apps/api/dist/main.js
+
+; The pool reconnects and /health answers 503 while PostgreSQL is away; a
+; process that exits comes back here.
+Restart=always
+RestartSec=5s
+; NFR-06: a deploy restart takes 10 s or less, so shutdown gets at most 5.
+TimeoutStopSec=5s
+
+; NFR-01: the target is 180 MB at idle. Above MemoryHigh the kernel throttles
+; and reclaims; at MemoryMax the unit is killed.
+MemoryHigh=224M
+MemoryMax=256M
+
+; The sandboxing from apion.service: the service reads its release, writes
+; only its data folder, and talks to PostgreSQL and loopback.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/fiscus/data
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

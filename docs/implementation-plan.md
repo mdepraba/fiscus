@@ -33,6 +33,8 @@ Updated 15 Oct 2026.
       ([Migrations](database/README.md#migrations)).
     - PostgreSQL 18 in CI. The database and `api` tests run against it,
       and fail instead of skipping when CI has no `DATABASE_URL`.
+    - The host runbook, the systemd unit and the PostgreSQL limits
+      drafted in `deploy/`, to verify once the host is ready.
   - 12 Oct 2026:
     - The app flow and the phone design revised. The web app's offline
       queue and install prompt are gone, BG-07 is now the phone app's sync,
@@ -49,8 +51,9 @@ Updated 15 Oct 2026.
       confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** the first deploy, starting with the host runbook. It needs the
-  host, and the deploy from CI needs the GitHub repo.
+- **Next:** run the drafted runbook on the host and check it against its
+  [verification table](../deploy/README.md#verifying-this-runbook), then
+  the deploy from CI.
 - **Waiting on you:** a private GitHub repo for CI, and the host. Stage 1's
   remaining items all need them. FD-31 is open for Stage 9, and the Stage 2
   decisions can be answered early.
@@ -257,14 +260,17 @@ from CI.
 **First deploy**
 
 - [ ] The host runbook takes a fresh LXC host to ready (NFR-08, PRD 5.3,
-      A-01):
+      A-01). Drafted 15 Oct 2026 in [deploy/README.md](../deploy/README.md),
+      not yet run on the host:
   - PostgreSQL 18 with 160 MB shared buffers and 20 connections
   - SSH by key only, and daily security updates
   - Tailscale
   - `/srv/fiscus/.env` at mode 0600
 - [ ] The systemd unit and `tailscale serve` to 127.0.0.1:3000 (FR-01,
       NFR-01, NFR-10). The unit sets MemoryHigh 224 MB and MemoryMax 256 MB,
-      with the sandboxing from `apion.service`
+      with the sandboxing from `apion.service`. Drafted 15 Oct 2026 in
+      [deploy/fiscus.service](../deploy/fiscus.service), not yet run on the
+      host
 - [ ] Deploy from CI (NFR-06, NFR-20). A green push to `main`:
   - ships `dist/`
   - runs the migrations
