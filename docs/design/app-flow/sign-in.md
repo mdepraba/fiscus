@@ -70,7 +70,7 @@ The one-time link printed by the server's reset command. It opens a short setup:
 
 | Case | What happens next | Source |
 | --- | --- | --- |
-| Valid: unused and within 15 minutes | The code is exchanged for a setup session that can only finish this wizard, and step 1 opens | FR-05, FD-05 |
+| Valid: unused and within 15 minutes | The code is exchanged for a setup session that can only finish this wizard and lasts 1 hour, and step 1 opens | FR-05, FD-05 |
 | Expired or used | "This sign-in link has expired or was already used. Run the reset command on the server again." There is no form | FR-05, Proposed |
 
 **Steps**

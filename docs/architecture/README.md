@@ -324,8 +324,9 @@ Modules declare these per route and never reimplement them.
 | Concern | PRD | Mechanism in `libs/api` |
 | --- | --- | --- |
 | Session and token auth, scopes (401, 403) | FR-03, FR-06, 2.2 | A guard plus a scope decorator |
-| `Idempotency-Key` | BR-09, NFR-13 | An interceptor replays stored responses. The key is saved on the create's own database transaction, so a crash cannot leave one without the other |
-| Rate limits | BR-31, NFR-14 | A guard |
+| `Idempotency-Key` | BR-09, NFR-13 | An interceptor replays stored responses. The key is saved on the create's own database transaction, so a crash cannot leave one without the other. A duplicate sent while the first is running waits for it, then gets its response |
+| Rate limits | BR-31, NFR-14 | A guard, with its counters in memory (`@nestjs/throttler`) |
+| Sign-in lockout | BR-29 | Read from the audit log, so it survives a restart. Passkey challenges stay in memory |
 | Audit log | FR-13, NFR-12 | An audit service called inside the use case's transaction |
 | Database down (503, Retry-After) | EC-16 | An exception filter |
 | Logs without file names or notes | NFR-11 | Logger configuration and redaction |

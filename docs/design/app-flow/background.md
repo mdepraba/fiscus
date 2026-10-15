@@ -239,7 +239,7 @@ Too many failed sign-ins lock sign-in for a while.
 
 1. Sign-in is locked for 15 minutes (BR-29).
 2. The owner gets an email at once, with the time and the tailnet device's name (5.2).
-3. The attempts are in the audit log (AC-01.2, FR-13).
+3. The attempts are in the audit log, and so is the lock, which is how sign-in knows it is locked until HH:MM (AC-01.2, FR-13).
 
 **What you see:** UI-CORE-01 in its locked state: "Too many attempts, try again at HH:MM".
 

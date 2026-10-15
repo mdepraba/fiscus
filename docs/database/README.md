@@ -619,6 +619,10 @@ Transactions themselves are kept indefinitely (NFR-15), and so are
 | Description column | Money Manager's Description field, kept apart from the 200-character note that BR-07 and FD-20 compare (FD-24) |
 | No transfer fees | A fee is its own Expense; a transfer stays one record (FR-20) |
 | Version bumps once per database transaction | A service may touch a row and its links in one action without tripping its own optimistic lock |
+| No in-flight state on idempotency keys | The key is saved in the create's own transaction, so no other request can see it early. A duplicate sent meanwhile waits, then gets the stored response (15 Oct 2026) |
+| The BR-29 lockout is read from the audit log | The failures are audited anyway (FR-13), and the lock survives a restart. An `auth.sign_in_locked` entry marks the lock's start, because a sliding count alone would unlock early |
+| Token use is audited once per token per day | A call-by-call trail at up to 600 calls a minute would outgrow a 1 GB host within the year the log is kept (FR-13, 15 Oct 2026) |
+| No tables for passkey challenges or rate-limit counters | One API process keeps them in memory. A restart loses at most a sign-in in progress and resets the counters (15 Oct 2026) |
 
 ## Requirement coverage
 
@@ -647,15 +651,18 @@ domain; the table names the columns they read.
 | BR-26, AC-10.4 | `transactions.deleted_at`, the purge job, `sync_tombstones` |
 | BR-27 | `import_batches_file_size_check`, `import_batches_row_count_check`, `rollback_until` |
 | BR-28, FR-06 | `core.api_tokens` |
-| BR-29 | `core.audit_log` (`audit_log_action_idx`) |
+| BR-29 | `core.audit_log`: `auth.sign_in_failed`, `auth.sign_in_locked` and `audit_log_action_idx` |
+| BR-37, FR-34 | `core.pairing_codes` |
 | BR-32, FR-31 | `categorisation_rules` |
 | BR-33, EC-19 | `transactions_recurring_key` |
 | BR-34 | `core.settings` (`server_timezone`) |
 | FR-02, FR-04, FR-05 | `core.owner`, `passkeys`, `totp_factors`, `recovery_codes`, `sign_in_links` |
 | FR-03 | `core.sessions` |
+| FR-07, AC-04.2 | No table: modules are switched on and off in configuration |
+| FR-08 | No table: the palette's recent items are kept in the browser, per device |
 | FR-09 to FR-11 | `core.backups`, `core.alert_state`, `core.restore_tests` |
 | FR-12, AC-06.2 | `core.exports`, `exports_running_key` |
-| FR-13, NFR-12 | `core.audit_log` |
+| FR-13, NFR-12 | `core.audit_log`; token use as one `token.used` entry per token per day |
 | FR-15, FR-16, AC-07.1 to AC-07.4 | `import_batches`, `transactions.import_batch_id` |
 | FR-17 | The seed (Stage 4): currencies, account groups, accounts, categories, budget items, `budget_settings` |
 | FR-19, EC-01, EC-02 | Client-supplied UUIDv7 ids and idempotency keys |

@@ -17,6 +17,7 @@ Oct 12, 2026 · @Praba
 | 1 | v1.0: the first Fiscus PRD, covering the core platform and ledger and budgets, with US, AC, FR, BR, EC, NFR, A and Q IDs | Traceability for tickets and tests |
 | 2 | v1.1: Phase 3, the phone app, with US-19 to US-24, FR-34 to FR-44, BR-35 to BR-38, EC-23 to EC-28, NFR-23 to NFR-25, A-15 and the `fiscus:settings` scope. The PWA is removed, and FR-14, FR-19, NFR-16, NFR-17, EC-02, EC-04, EC-16 and AC-08.3 are restated | ADR-0002 accepted, Q-07, Q-01 and Q-08 answered (11 and 12 Oct 2026) |
 | 3 | v1.1, amended: BR-34 and A-10 default to Asia/Jakarta (WIB) instead of Asia/Makassar, and A-03 is confirmed | Phase 1 decisions answered (15 Oct 2026) |
+| 4 | v1.1, amended: FR-13 records a token's use once per day | The core schema review (15 Oct 2026) |
 
 ## Contents
 

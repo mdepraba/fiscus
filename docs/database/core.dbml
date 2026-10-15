@@ -36,17 +36,13 @@ Enum core.caller_kind {
   token
 }
 
-Enum core.idempotency_state {
-  in_flight
-  completed
-}
-
 Enum core.actor_kind {
   owner
   token
   scheduler
   system
   cli [note: 'The server reset command (FR-05)']
+  anonymous [note: 'A failed sign-in, whose actor is unknown (FR-13)']
 }
 
 Enum core.file_purpose {
@@ -144,7 +140,7 @@ Table core.sessions {
   device_name varchar(100) [not null]
   created_at timestamptz [not null, default: `now()`]
   last_seen_at timestamptz [not null, default: `now()`, note: 'Written at most once a minute']
-  expires_at timestamptz [not null, note: '30 days for full sessions (FR-03)']
+  expires_at timestamptz [not null, note: '30 days for full sessions (FR-03); 1 hour for setup sessions (FD-05, decided 15 Oct 2026)']
   revoked_at timestamptz
 
   indexes {
@@ -165,7 +161,7 @@ Table core.api_tokens {
   created_at timestamptz [not null, default: `now()`]
   expires_at timestamptz [not null]
   revoked_at timestamptz
-  last_used_at timestamptz [note: 'Written at most once a minute (FR-06)']
+  last_used_at timestamptz [note: 'Written at most once a minute (FR-06). When it moves to a new day in the server timezone, a token.used audit entry is written (FR-13)']
   expiry_warned_at timestamptz [note: 'The 7-day warning email (PRD 5.2, BG-09)']
 
   checks {
@@ -184,7 +180,7 @@ Table core.pairing_codes {
   id uuid [pk, default: `uuidv7()`]
   code_hash bytea [not null, unique]
   device_name varchar(60) [not null, note: 'Becomes the token name']
-  expires_at timestamptz [not null]
+  expires_at timestamptz [not null, note: '10 minutes after creation (BR-37)']
   used_at timestamptz
   token_id uuid [note: 'The token the code was exchanged for']
   created_at timestamptz [not null, default: `now()`]
@@ -201,8 +197,7 @@ Table core.idempotency_keys {
   caller_id uuid [not null, note: 'The owner id or the token id']
   key varchar(64) [not null, note: 'The Idempotency-Key header, or a sync mutationId']
   request_hash bytea [not null, note: 'SHA-256 of method, route and body. Same key, other hash: 422 (BR-09)']
-  state core.idempotency_state [not null, default: 'in_flight', note: 'in_flight: 409 idempotency_key_in_flight']
-  response_status smallint
+  response_status smallint [not null]
   response_body jsonb
   created_at timestamptz [not null, default: `now()`]
   expires_at timestamptz [not null, note: '24 hours after creation (BR-09)']
@@ -214,11 +209,13 @@ Table core.idempotency_keys {
 
   checks {
     `length(key) BETWEEN 8 AND 64` [name: 'idempotency_keys_key_check']
-    `(state = 'completed') = (response_status IS NOT NULL)` [name: 'idempotency_keys_state_check']
-    `response_status IS NULL OR response_status < 500` [name: 'idempotency_keys_response_status_check']
+    `response_status < 500` [name: 'idempotency_keys_response_status_check']
   }
 
-  Note: 'Saved in the create\'s own database transaction (BR-09). Responses of 500 and above are not kept'
+  Note: '''
+  Saved in the create\'s own database transaction, with its response (BR-09). Responses of 500 and above are not kept: the transaction rolls back.
+  No other request can see a row before it commits, so there is no in-flight state. A duplicate sent while the first is still running waits on the primary key, then gets the stored response (decided 15 Oct 2026).
+  '''
 }
 
 // ---------------------------------------------------------------- audit and settings
@@ -230,7 +227,7 @@ Table core.audit_log {
   actor_id uuid [note: 'The owner or token id']
   actor_name varchar(100) [not null, note: '"You" or the token name, copied (NFR-12)']
   module varchar(40) [not null]
-  action varchar(100) [not null, note: 'For example auth.sign_in_failed, fiscus.transaction.purged']
+  action varchar(100) [not null, note: 'For example auth.sign_in_failed, token.used, fiscus.transaction.purged']
   entity_type varchar(60)
   entity_id uuid
   before jsonb [note: 'Settings changes keep before and after values (FR-13)']
@@ -239,11 +236,15 @@ Table core.audit_log {
 
   indexes {
     occurred_at [name: 'audit_log_occurred_at_idx']
-    (action, occurred_at) [name: 'audit_log_action_idx', note: 'Also counts failed sign-ins for the BR-29 lockout']
+    (action, occurred_at) [name: 'audit_log_action_idx', note: 'Also serves the BR-29 lockout']
     (entity_type, entity_id) [name: 'audit_log_entity_idx']
   }
 
-  Note: 'Append-only (core.append_only). Kept 1 year (NFR-12)'
+  Note: '''
+  Append-only (core.append_only). Kept 1 year (NFR-12).
+  The BR-29 lockout is read from here, so it survives a restart. The fifth auth.sign_in_failed within 15 minutes, counted since the last lock, writes auth.sign_in_locked. Sign-in is locked while that entry is under 15 minutes old, and "try again at" is its time plus 15 minutes. A sliding count alone would unlock early.
+  Token use is one token.used entry per token per day, on its first call that day (FR-13, decided 15 Oct 2026). A call-by-call trail would outgrow the host.
+  '''
 }
 
 Table core.settings {
@@ -330,22 +331,32 @@ Table core.exports {
 Ref exports_file_id_fkey: core.exports.file_id > core.files.id [delete: set null]
 
 Table core.alert_state {
-  kind varchar(60) [pk, note: 'backup_missing, disk_full, unit_restarts, sign_in_locked, token_expiring']
+  kind varchar(60) [pk, note: 'backup_missing, disk_full, unit_restarts, sign_in_locked, fiscus.holidays_missing']
   condition_since timestamptz [note: 'When the condition began; NULL when it is clear']
-  last_sent_at timestamptz [note: 'At most one email per 24 hours (FR-10)']
+  last_sent_at timestamptz [note: 'Conditions email at most once per 24 hours (FR-10)']
   last_error text [note: 'A failed send, retried the next hour (PRD 5.1)']
   updated_at timestamptz [not null, default: `now()`]
+
+  Note: '''
+  One row per kind of alert email (PRD 5.2). The 24-hour limit is for conditions that last: backup_missing, disk_full and unit_restarts.
+  sign_in_locked emails on every lock, at once; its row only keeps the last send and its error.
+  fiscus.holidays_missing is the 1 December email, sent once a year (A-13).
+  A token\'s 7-day warning is per token, in core.api_tokens.expiry_warned_at.
+  '''
 }
 
-Table core.schema_migrations {
-  module varchar(40) [not null]
-  name varchar(200) [not null]
-  checksum char(64) [not null, note: 'SHA-256 of the SQL file']
+Table public.schema_migrations {
+  module text [not null]
+  name text [not null]
+  checksum text [not null, note: 'SHA-256 of the SQL file, in hex, with line endings normalised']
   applied_at timestamptz [not null, default: `now()`]
 
   indexes {
     (module, name) [pk]
   }
 
-  Note: 'Created by the libs/db runner itself, not by a migration (Stage 1)'
+  Note: '''
+  Not in core: the libs/db runner creates it in public before any migration runs, so that core\'s first migration can create the core schema (Stage 1, README.md "Migrations").
+  It is listed here because the runner belongs to the platform.
+  '''
 }

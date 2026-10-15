@@ -17,9 +17,15 @@ Updated 15 Oct 2026.
 - **Stage 1, Foundations: signed off 15 Oct 2026.** The first deploy moved
   to Stage 3.
 - **Stage 2, Core platform: in progress.** The Phase 1 decisions are
-  answered; the core schema review is next.
+  answered and the core schema is reviewed; the core API requirements are
+  next.
 - **Lately:**
   - 15 Oct 2026:
+    - **You:** the core schema reviewed. Idempotency keys lose their
+      in-flight state, token use is audited once per token per day (FR-13
+      restated), passkey challenges and rate limits stay in memory, and a
+      setup session lasts 1 hour. `schema_migrations` moved to `public` in
+      the DBML, and the lockout reads an `auth.sign_in_locked` entry.
     - **You:** Stage 1 signed off. CI refused a deliberate boundary break,
       and a full run takes 46 s.
     - **You:** the first deploy moved to Stage 3, so that features come
@@ -64,10 +70,11 @@ Updated 15 Oct 2026.
       confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** Stage 2's specs: review the [core schema](database/core.dbml)
-  against the PRD, then write the core API requirements.
-- **Waiting on you:** PR #1, and then the core schema review. FD-31 is open
-  for Stage 9, and Q-04, A-06 and A-07 for Stage 3.
+- **Next:** write the core API requirements in `docs/api-requirement/`,
+  then the core migrations.
+- **Waiting on you:** PR #1, and then the review of the core API
+  requirements. FD-31 is open for Stage 9, and Q-04, A-06 and A-07 for
+  Stage 3.
 - **The code:** the 9 TypeScript projects of PRD 5.4, with the
   configuration, the database client and the migration runner, but no
   features yet. The phone app waits for Stage 9. CI is green on `dev`.
@@ -98,7 +105,7 @@ flowchart TD
 | --- | --- | --- | --- | --- | --- |
 | [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Signed off 15 Oct 2026 |
 | [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, and CI with PostgreSQL | 10 of 10 | CI green | Signed off 15 Oct 2026 |
-| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 1 of 26 | Sign-in works | In progress |
+| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 2 of 26 | Sign-in works | In progress |
 | [3 Operations](#stage-3-operations) | 1 | The first deploy from CI, backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 11 | Gate A | Not started |
 | [4 Fiscus specs and rules](#stage-4-fiscus-specs-and-rules) | 2 | The `fiscus` schema, API and contracts, the seed, every domain rule with its tests, and design Pass 2 | 0 of 14 | Rules proven | Not started |
 | [5 Ledger](#stage-5-ledger) | 2 | Accounts, transactions, review, trash and quick entry, on a computer and in the phone layout | 0 of 8 | Ledger works | Not started |
@@ -305,9 +312,18 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
   - the SMTP relay (Q-04), the backup target (A-06) and alert email (A-07)
     moved to Stage 3, where backups and alerts are built. Until then the
     Mailer has only its in-memory adapter
-- [ ] Review the `core` schema against the PRD
+- [x] Review the `core` schema against the PRD
       ([core.dbml](database/core.dbml), drafted 11 Oct 2026). It covers
-      FR-02 to FR-13, BR-09, BR-28 and BR-29
+      FR-02 to FR-13, BR-09, BR-28 and BR-29. Reviewed 15 Oct 2026, and
+      your answers applied:
+  - idempotency keys have no in-flight state; a duplicate waits for the
+    first and gets its response
+  - token use is audited once per token per day (FR-13 restated)
+  - passkey challenges and rate-limit counters stay in memory
+  - a setup session lasts 1 hour
+  - fixes: `schema_migrations` is in `public`, the lockout is read from an
+    `auth.sign_in_locked` entry, failed sign-ins have an `anonymous` actor,
+    and the alert kinds include the holidays email
 - [ ] Write the core API requirements in `docs/api-requirement/` (FR-02 to
       FR-13, BR-09):
   - every endpoint, with its actor, request, response, errors and audit
@@ -355,7 +371,9 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
       and the last-used time (FR-06, PRD 2.2, AC-03.2, AC-03.3)
 - [ ] The idempotency interceptor (BR-09, NFR-13, EC-03):
   - a repeated request gets the stored response back
-  - `idempotency_key_reused` and `idempotency_key_in_flight`
+  - `idempotency_key_reused` for the same key with a different request
+  - a duplicate sent while the first is running waits for it, then gets
+    its response
   - keys are kept for 24 hours, saved in the create's own transaction
 - [ ] Rate limits: 600 a minute per token on the private API and 60 for
       ingest, with 429 and `Retry-After` (NFR-14, BR-31)
@@ -901,7 +919,8 @@ Decisions only you can make, and the stage that needs each one.
 | Where the first deploy goes | 1 | Answered 15 Oct 2026: Stage 3, so that features come before the host |
 | A-03 recovery; A-10 server timezone | 2 | Answered 15 Oct 2026: A-03 as written; A-10 Asia/Jakarta (WIB) |
 | Q-04 SMTP relay; A-06 backup target; A-07 alert email | 3 | Open. Moved from Stage 2 on 15 Oct 2026 |
-| Review the core schema and the core API requirements | 2 | Open |
+| Review the core schema | 2 | Answered 15 Oct 2026: no in-flight idempotency state, token use audited once a day, challenges and rate limits in memory, setup sessions last 1 hour |
+| Review the core API requirements | 2 | Open |
 | Q-02 ingest domain; A-04, A-08, A-09; `@fastify/multipart` | 4 | Open |
 | Review the `fiscus` schema and API requirements | 4 | Open |
 | Q-03 cutover date; Q-05 if A-05 fails | 7 | Open |

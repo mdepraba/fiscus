@@ -323,7 +323,7 @@ The first time Fiscus opens, its code loads on demand (NFR-22) behind a skeleton
 
 ### Palette entries
 
-The palette (FR-08, US-04) gets these entries from the `fiscus` manifest (FR-07). Enter opens the result, and an empty query lists recent items.
+The palette (FR-08, US-04) gets these entries from the `fiscus` manifest (FR-07). Enter opens the result, and an empty query lists recent items, which each browser keeps for itself.
 
 | Entry | Opens | Keywords |
 | --- | --- | --- |
