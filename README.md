@@ -68,4 +68,5 @@ bun x nx run @app/fiscus-web:dev
 `bun run check` reports. The API listens on 127.0.0.1:3000, and the web app
 on localhost:4200 proxies `/api` and `/health` to it. `/health` answers 503
 while PostgreSQL is down. The database tests run when `.env` sets
-`DATABASE_URL`, each in a throwaway database, and are skipped without it.
+`DATABASE_URL`, each in a throwaway database, and are skipped without it. CI
+runs them against its own PostgreSQL 18.

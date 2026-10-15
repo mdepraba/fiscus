@@ -165,8 +165,8 @@ are reads and go straight to SQL with pagination (EC-22, NFR-04).
        as abstract classes.
 3. [ ] Define the rule-violation shape in `contracts`, and a core exception
        filter that maps it to 400 or 422.
-4. [ ] Add a PostgreSQL service to CI for `api` integration tests
-       (Stage 1).
+4. [x] Add a PostgreSQL service to CI for `api` integration tests
+       (Stage 1). Done 15 Oct 2026, in `.github/workflows/ci.yml`.
 5. [ ] When FR-07 is built, split each manifest: data in `web/./manifest`,
        and migrations, jobs and settings in `api`.
 6. [x] Owner: accept this ADR or amend it. Accepted as written on 4 Oct

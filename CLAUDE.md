@@ -26,7 +26,9 @@ npm are not used.
 - `bun install`: install, and set up the Husky hooks.
 - `cp .env.example .env` and `docker compose up -d postgres`: PostgreSQL 18
   for development. Database tests run when `DATABASE_URL` is set, each in a
-  throwaway database from `@core/db/testing`, and are skipped without it.
+  throwaway database from `@core/db/testing`. Without it they are skipped,
+  except in CI, which has its own PostgreSQL 18 and fails if the URL is
+  missing.
 - `bun run check`: Biome lint and format check. `bun run format` fixes.
 - `bun run boundaries`: the module rules of PRD 5.4 over the Nx graph.
   Every project needs one `scope:` and one `type:` tag.

@@ -13,6 +13,25 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    # ADR-0001 action 4: the database and api tests run against the same
+    # PostgreSQL major version as production. Each test file creates its own
+    # throwaway database on this server (@core/db/testing).
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: fiscus
+          POSTGRES_PASSWORD: fiscus
+          POSTGRES_DB: fiscus
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fiscus -d fiscus"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,5 +87,9 @@ jobs:
       - name: Lint and format
         run: bun x biome ci .
 
+      # GitHub sets CI, so a database test that cannot find DATABASE_URL fails
+      # here instead of being skipped (libs/db/src/testing.ts).
       - name: Typecheck, test and build what changed
         run: bun x nx affected -t typecheck test build
+        env:
+          DATABASE_URL: postgres://fiscus:fiscus@localhost:5432/fiscus

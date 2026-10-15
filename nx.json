@@ -41,7 +41,10 @@
   ],
   "targetDefaults": {
     "typecheck": { "cache": true, "inputs": ["default", "^production"] },
-    "test": { "cache": true, "inputs": ["default", "^production"] },
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^production", { "env": "DATABASE_URL" }, { "env": "CI" }]
+    },
     "build": { "cache": true, "inputs": ["production", "^production"] }
   },
   "sync": { "applyChanges": true }

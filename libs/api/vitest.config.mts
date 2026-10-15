@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config';
 try {
   process.loadEnvFile(new URL('../../.env', import.meta.url));
 } catch {
-  // No .env: the database tests are skipped (@core/db/testing).
+  // No .env: the database tests are skipped, or fail in CI (@core/db/testing).
 }
 
 export default defineConfig({
