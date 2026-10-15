@@ -260,7 +260,7 @@ Table core.settings {
 
   Note: '''
   Namespaced by module id and typed by each module\'s contracts (BR-34, FR-13).
-  Holds core.server_timezone (BR-34, default Asia/Makassar).
+  Holds core.server_timezone (BR-34, default Asia/Jakarta).
   Fiscus\'s payday rule and buffers are not here: they sync to the phone, so they live in fiscus.budget_settings.
   '''
 }

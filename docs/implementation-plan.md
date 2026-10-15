@@ -14,10 +14,19 @@ tasks, shortened, and the T- task ids are no longer used.
 Updated 15 Oct 2026.
 
 - **Stage 0, Redesign the spec: signed off 15 Oct 2026.**
-- **Stage 1, Foundations: in progress.** 10 of 14 work items done. The
-  first deploy is left.
+- **Stage 1, Foundations: work done, waiting for your sign-off.** 10 of 10
+  work items done. The first deploy moved to Stage 3.
 - **Lately:**
   - 15 Oct 2026:
+    - **You:** the first deploy moved to Stage 3, so that features come
+      before the host. Stage 1 now ends at CI green, and Gate A takes the
+      deploy checks.
+    - **You:** A-03 confirmed (10 recovery codes and a server reset
+      command), and A-10 changed to Asia/Jakarta (WIB). Q-04, A-06 and A-07
+      moved to Stage 3, where backups and alerts are built.
+    - The private repo on GitHub, with `dev` pushed. CI's first run failed
+      until `nx-set-shas` was given `actions: read`; it is now green, and a
+      full run of all 9 projects takes 46 s. PR #1 brings `main` up to date.
     - The workspace and the docs committed on `dev`, and Stage 0 signed off.
     - The 9 projects scaffolded, with `bun run boundaries` and
       `bun run secrets` in CI and the boundary rules tightened. `apps/api`
@@ -51,16 +60,13 @@ Updated 15 Oct 2026.
       confirmed for Android with a pay cycle of real use.
   - Earlier: Flutter (Q-07), TypeScript for the server (Q-01), the database
     design, Phase 3, no PWA (Q-08), and this plan.
-- **Next:** run the drafted runbook on the host and check it against its
-  [verification table](../deploy/README.md#verifying-this-runbook), then
-  the deploy from CI.
-- **Waiting on you:** a private GitHub repo for CI, and the host. Stage 1's
-  remaining items all need them. FD-31 is open for Stage 9, and the Stage 2
-  decisions can be answered early.
+- **Next:** Stage 2's specs: review the [core schema](database/core.dbml)
+  against the PRD, then write the core API requirements.
+- **Waiting on you:** the Stage 1 sign-off, PR #1, and then the core schema
+  review. FD-31 is open for Stage 9, and Q-04, A-06 and A-07 for Stage 3.
 - **The code:** the 9 TypeScript projects of PRD 5.4, with the
   configuration, the database client and the migration runner, but no
-  features yet. The phone app waits for Stage 9. The repo has no remote yet,
-  so CI has not run; its steps pass locally.
+  features yet. The phone app waits for Stage 9. CI is green on `dev`.
 
 ## Stages
 
@@ -87,9 +93,9 @@ flowchart TD
 | Stage | Phase | Delivers | Work done | Ends at | Status |
 | --- | --- | --- | --- | --- | --- |
 | [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Signed off 15 Oct 2026 |
-| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, CI with PostgreSQL, and the first deploy from CI | 10 of 14 | First deploy | In progress |
-| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 0 of 26 | Sign-in works | Not started |
-| [3 Operations](#stage-3-operations) | 1 | Backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 6 | Gate A | Not started |
+| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, and CI with PostgreSQL | 10 of 10 | CI green | Waiting for sign-off |
+| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 1 of 26 | Sign-in works | Not started |
+| [3 Operations](#stage-3-operations) | 1 | The first deploy from CI, backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 11 | Gate A | Not started |
 | [4 Fiscus specs and rules](#stage-4-fiscus-specs-and-rules) | 2 | The `fiscus` schema, API and contracts, the seed, every domain rule with its tests, and design Pass 2 | 0 of 14 | Rules proven | Not started |
 | [5 Ledger](#stage-5-ledger) | 2 | Accounts, transactions, review, trash and quick entry, on a computer and in the phone layout | 0 of 8 | Ledger works | Not started |
 | [6 Budget, imports and ingest](#stage-6-budget-imports-and-ingest) | 2 | Budget and afford, the Money Manager import, rules, recurring transactions, reports and public ingest | 0 of 11 | Feature complete | Not started |
@@ -105,9 +111,8 @@ flowchart TD
    [Every gate needs](#every-gate-needs). A gate closes its phase, and
    nothing from the next phase starts early (PRD 1.3).
 2. **Work runs top to bottom.** Items with no dependency between them can run
-   side by side. For example, the `deploy/` items can run beside the data
-   layer in Stage 1, and the design system beside the sign-in work in
-   Stage 2.
+   side by side. For example, the design system can run beside the sign-in
+   work in Stage 2, and the first deploy beside the backups in Stage 3.
 3. **Docs may run ahead.** A spec, a review or one of your decisions may be
    done before its stage. Code waits for its stage. That is why Stage 1's
    decisions are already done.
@@ -210,9 +215,9 @@ before any code is written.
 
 ## Stage 1: Foundations
 
-Before Phase 1. Settle the workspace, the data layer, CI and the first
-deploy, so that every later item is tested on a real PostgreSQL and shipped
-from CI.
+Before Phase 1. Settle the workspace, the data layer and CI, so that every
+later item is tested on a real PostgreSQL. The first deploy moved to
+[Stage 3](#stage-3-operations) on 15 Oct 2026.
 
 ### Work
 
@@ -259,35 +264,21 @@ from CI.
 
 **First deploy**
 
-- [ ] The host runbook takes a fresh LXC host to ready (NFR-08, PRD 5.3,
-      A-01). Drafted 15 Oct 2026 in [deploy/README.md](../deploy/README.md),
-      not yet run on the host:
-  - PostgreSQL 18 with 160 MB shared buffers and 20 connections
-  - SSH by key only, and daily security updates
-  - Tailscale
-  - `/srv/fiscus/.env` at mode 0600
-- [ ] The systemd unit and `tailscale serve` to 127.0.0.1:3000 (FR-01,
-      NFR-01, NFR-10). The unit sets MemoryHigh 224 MB and MemoryMax 256 MB,
-      with the sandboxing from `apion.service`. Drafted 15 Oct 2026 in
-      [deploy/fiscus.service](../deploy/fiscus.service), not yet run on the
-      host
-- [ ] Deploy from CI (NFR-06, NFR-20). A green push to `main`:
-  - ships `dist/`
-  - runs the migrations
-  - restarts the unit in 10 s or less and polls `/health`
+Moved to [Stage 3](#stage-3-operations) on 15 Oct 2026 at your request, so
+that features come before the host. The runbook and the unit stay drafted in
+`deploy/`.
 
-  The host never builds.
-- [ ] The memory baseline: idle RSS of Fiscus, PostgreSQL and Tailscale from
-      systemd accounting (NFR-01, NFR-02)
+- ~~The host runbook takes a fresh LXC host to ready~~
+- ~~The systemd unit and `tailscale serve`~~
+- ~~Deploy from CI~~
+- ~~The memory baseline~~
 
-### Sign-off: first deploy
+### Sign-off: CI
 
-- [ ] A push to `main` that passes `verify` goes live on the host, and
-      `/health` answers over the tailnet
-- [ ] Nothing answers from outside the tailnet (FR-01)
 - [ ] A boundary break or a committed secret fails CI (NFR-10)
 - [ ] CI finishes in 5 minutes or less for a one-project change (NFR-21)
-- [ ] The idle RSS baseline is written in `deploy/README.md` (NFR-01)
+
+The three deploy checks moved to [Gate A](#gate-a) with the first deploy.
 
 ## Stage 2: Core platform
 
@@ -299,12 +290,13 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
 
 **Specs first**
 
-- [ ] **You:** the Phase 1 decisions:
-  - the SMTP relay (Q-04)
-  - the backup target (A-06)
-  - the server timezone (A-10)
-  - the recovery approach (A-03)
-  - alert email (A-07)
+- [x] **You:** the Phase 1 decisions (15 Oct 2026):
+  - the recovery approach (A-03): confirmed, 10 recovery codes and a server
+    reset command
+  - the server timezone (A-10): Asia/Jakarta (WIB)
+  - the SMTP relay (Q-04), the backup target (A-06) and alert email (A-07)
+    moved to Stage 3, where backups and alerts are built. Until then the
+    Mailer has only its in-memory adapter
 - [ ] Review the `core` schema against the PRD
       ([core.dbml](database/core.dbml), drafted 11 Oct 2026). It covers
       FR-02 to FR-13, BR-09, BR-28 and BR-29
@@ -335,7 +327,7 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
 - [ ] The audit log service, which writes inside the caller's database
       transaction (FR-13, NFR-12)
 - [ ] The settings store: namespaced by module, with `server_timezone`
-      defaulting to Asia/Makassar, and every change audited (BR-34, A-10)
+      defaulting to Asia/Jakarta, and every change audited (BR-34, A-10)
 
 **Sign-in and access**
 
@@ -396,8 +388,9 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
 
 - [ ] The core schema and the core API requirements were reviewed before the
       first migration
-- [ ] On the deployed app, these all work, on a computer and in the phone's
-      browser (US-01, US-02):
+- [ ] On the app run locally, these all work, on a computer and in the
+      phone layout (US-01, US-02). A real phone over the tailnet is checked
+      at [Gate A](#gate-a), once the app is deployed:
   - setting up the owner
   - signing in with a passkey, and with a password and TOTP
   - using a recovery code
@@ -410,11 +403,40 @@ shell: sign-in, tokens, jobs, the registry and the palette. It covers
 
 ## Stage 3: Operations
 
-Phase 1. Make the data safe: backups, alerts, the restore test, the System
-page and the full export. It covers [US-05 and US-06](user-story/core-platform.md),
-and it ends at Gate A.
+Phase 1. Put Fiscus on the host, then make the data safe: backups, alerts,
+the restore test, the System page and the full export. It covers
+[US-05 and US-06](user-story/core-platform.md), and it ends at Gate A.
 
 ### Work
+
+- [ ] **You:** the SMTP relay (Q-04), the backup target (A-06) and alert
+      email (A-07). Moved from Stage 2 on 15 Oct 2026
+
+**First deploy**
+
+Moved from Stage 1 on 15 Oct 2026. The runbook and the unit were drafted
+then, and have not yet run on the host.
+
+- [ ] The host runbook takes a fresh LXC host to ready (NFR-08, PRD 5.3,
+      A-01). Drafted 15 Oct 2026 in [deploy/README.md](../deploy/README.md):
+  - PostgreSQL 18 with 160 MB shared buffers and 20 connections
+  - SSH by key only, and daily security updates
+  - Tailscale
+  - `/srv/fiscus/.env` at mode 0600
+- [ ] The systemd unit and `tailscale serve` to 127.0.0.1:3000 (FR-01,
+      NFR-01, NFR-10). The unit sets MemoryHigh 224 MB and MemoryMax 256 MB,
+      with the sandboxing from `apion.service`. Drafted 15 Oct 2026 in
+      [deploy/fiscus.service](../deploy/fiscus.service)
+- [ ] Deploy from CI (NFR-06, NFR-20). A green push to `main`:
+  - ships `dist/`
+  - runs the migrations
+  - restarts the unit in 10 s or less and polls `/health`
+
+  The host never builds.
+- [ ] The memory baseline: idle RSS of Fiscus, PostgreSQL and Tailscale from
+      systemd accounting (NFR-01, NFR-02)
+
+**Operations**
 
 - [ ] The nightly backup (FR-09, EC-18, A-06, US-05):
   - at 02:00, the database dump and `/srv/fiscus/data` go to B2 with restic
@@ -443,7 +465,13 @@ and it ends at Gate A.
 ### Gate A
 
 - [ ] Everything in [Every gate needs](#every-gate-needs)
-- [ ] US-01 to US-05 pass (US-06 is Should)
+- [ ] A push to `main` that passes `verify` goes live on the host, and
+      `/health` answers over the tailnet (moved from Stage 1)
+- [ ] Nothing answers from outside the tailnet (FR-01, moved from Stage 1)
+- [ ] The idle RSS baseline is written in `deploy/README.md` (NFR-01, moved
+      from Stage 1)
+- [ ] US-01 to US-05 pass (US-06 is Should). US-01 and US-02 are also
+      checked on a real phone over the tailnet, which Stage 2 could not do
 - [ ] A nightly backup has succeeded, and the restore test has passed once
       (FR-09, FR-11). The 30-of-30 backup metric runs from here
 - [ ] Caddy and Tailscale memory is measured (PRD 5.3)
@@ -862,7 +890,9 @@ Decisions only you can make, and the stage that needs each one.
 | Libraries for foundations and Phase 1 | 1 | Done, 4 Oct 2026 |
 | Gates A and B | 1 | Done, 4 Oct 2026. Gate B changed for Q-08 on 11 Oct 2026 |
 | SWC 1.16 will not load on the development machine | 1 | Answered 15 Oct 2026: pin SWC 1.15.8 |
-| Q-04 SMTP relay; A-03, A-06, A-07, A-10 | 2 | Open |
+| Where the first deploy goes | 1 | Answered 15 Oct 2026: Stage 3, so that features come before the host |
+| A-03 recovery; A-10 server timezone | 2 | Answered 15 Oct 2026: A-03 as written; A-10 Asia/Jakarta (WIB) |
+| Q-04 SMTP relay; A-06 backup target; A-07 alert email | 3 | Open. Moved from Stage 2 on 15 Oct 2026 |
 | Review the core schema and the core API requirements | 2 | Open |
 | Q-02 ingest domain; A-04, A-08, A-09; `@fastify/multipart` | 4 | Open |
 | Review the `fiscus` schema and API requirements | 4 | Open |
@@ -876,7 +906,7 @@ Decisions only you can make, and the stage that needs each one.
 
 | Story | Priority | Stages |
 | --- | --- | --- |
-| US-01 Sign in | Must | 1, 2; AC-01.3 in 6 |
+| US-01 Sign in | Must | 2, 3; AC-01.3 in 6 |
 | US-02 Recover access | Must | 2 |
 | US-03 Manage API tokens | Must | 2 |
 | US-04 Find and open pages | Must | 2 |

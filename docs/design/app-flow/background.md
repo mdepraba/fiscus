@@ -87,7 +87,7 @@ The API offers create, list, get, update, trash, restore, budget status and the 
 
 The open cycle closes, the next one opens, and recurring rules run.
 
-- **Trigger:** 00:00 server time on payday. The server timezone defaults to Asia/Makassar (BR-34, A-10)
+- **Trigger:** 00:00 server time on payday. The server timezone defaults to Asia/Jakarta (BR-34, A-10)
 - **Actor:** the scheduler
 - **Stories:** US-17, FR-29, FR-32, BR-23, BR-33, AC-17.1, AC-17.2, EC-19
 

@@ -8,7 +8,7 @@ used here, because it does not start on this host (PRD 1.3).
 **Status: drafted 15 Oct 2026, not yet run on the host.** The steps follow
 the Apion and Atelion hosts. Each one ends with a check, and
 [Verifying this runbook](#verifying-this-runbook) lists what to confirm
-before the Stage 1 work items are ticked.
+before the Stage 3 work items are ticked.
 
 | File | What it is |
 | --- | --- |
@@ -282,7 +282,7 @@ Most of steps 1 to 5 are then already done, with these differences:
 ## Verifying this runbook
 
 When the host is ready, run the steps and confirm each of these. Then tick
-the Stage 1 work items in the [implementation plan](../docs/implementation-plan.md),
+the Stage 3 work items in the [implementation plan](../docs/implementation-plan.md),
 and fix this runbook wherever the host differed.
 
 | Check | Work item |

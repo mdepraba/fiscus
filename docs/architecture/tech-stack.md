@@ -200,7 +200,7 @@ ones that count against NFR-01.
 | Everything above, nodemailer and fflate included | | +33.2 MB, 90.5 MB total |
 
 That leaves about 90 MB of the 180 MB target (NFR-01) for Fiscus's own code,
-caches and requests. Re-measure on the host in Stage 1.
+caches and requests. Re-measure on the host in Stage 3.
 
 **Browser size.** A minified esbuild bundle of the imports a screen really
 uses, with React external, gzipped. Vite's `reportCompressedSize` gives the

@@ -6,14 +6,14 @@
 | --- | --- | --- | --- |
 | A-01 | Fiscus runs on the current 1 vCPU / 1 GB LXC VPS, shared with Apion until Apion is shut down | The memory budget changes (5.3) | You, before Phase 2 |
 | A-02 | You own, or will buy, a domain for the public ingest endpoint | US-12 cannot ship | You (Q-02) |
-| A-03 | Account recovery uses 10 recovery codes plus a server reset command | Lockout is handled differently | You, Phase 1 |
+| A-03 | Account recovery uses 10 recovery codes plus a server reset command (confirmed 15 Oct 2026) | Lockout is handled differently | Decided |
 | A-04 | Trashed transactions stay 30 days, and edits keep full history | Restore behavior and storage change | You, Phase 2 |
 | A-05 | Cloud-run agents can reach your public ingest endpoint | If their outbound allowlist blocks it, skills must run from a tailnet device, or a remote MCP connector is needed (Q-05) | A test call from a cloud session in Phase 2 |
 | A-06 | Backups go to Backblaze B2 | A different restic backend and cost | You, Phase 1 |
 | A-07 | Alerts go by email through an SMTP relay you configure | No alert channel | You (Q-04) |
 | A-08 | Unreviewed transactions count in budgets and afford checks | Afford results are too optimistic or too pessimistic | You, Phase 2 |
 | A-09 | Recurring transactions arrive Unreviewed | More or less review work | You, Phase 2 |
-| A-10 | The server timezone setting defaults to Asia/Makassar (WITA) for scheduled jobs and cycle opening | Jobs run at unexpected hours | You, Phase 1 |
+| A-10 | The server timezone setting defaults to Asia/Jakarta (WIB) for scheduled jobs and cycle opening (decided 15 Oct 2026; it was Asia/Makassar) | Jobs run at unexpected hours | Decided |
 | A-11 | The base currency is chosen at setup, IDR by default, and budgets, afford checks and reports are in it. Each account has one currency. A transaction may be in any of the owner's preferred currencies: it stores the amount entered, the exchange rate and the amount in the account's currency. Rates are entered by hand, one per currency (decided 4 Oct 2026, revised 11 Oct 2026) | Budget and report totals would need another base | Decided |
 | A-12 | Money Manager TSV dates are MM/DD/YYYY, your exporter's default | Dates import wrongly | The import preview (EC-06) |
 | A-13 | Holidays are entered by hand each year, seeded from your budgeting skill's list | Paydays are wrong | The yearly reminder (5.2) |
