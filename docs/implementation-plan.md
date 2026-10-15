@@ -14,10 +14,14 @@ tasks, shortened, and the T- task ids are no longer used.
 Updated 15 Oct 2026.
 
 - **Stage 0, Redesign the spec: signed off 15 Oct 2026.**
-- **Stage 1, Foundations: work done, waiting for your sign-off.** 10 of 10
-  work items done. The first deploy moved to Stage 3.
+- **Stage 1, Foundations: signed off 15 Oct 2026.** The first deploy moved
+  to Stage 3.
+- **Stage 2, Core platform: in progress.** The Phase 1 decisions are
+  answered; the core schema review is next.
 - **Lately:**
   - 15 Oct 2026:
+    - **You:** Stage 1 signed off. CI refused a deliberate boundary break,
+      and a full run takes 46 s.
     - **You:** the first deploy moved to Stage 3, so that features come
       before the host. Stage 1 now ends at CI green, and Gate A takes the
       deploy checks.
@@ -62,8 +66,8 @@ Updated 15 Oct 2026.
     design, Phase 3, no PWA (Q-08), and this plan.
 - **Next:** Stage 2's specs: review the [core schema](database/core.dbml)
   against the PRD, then write the core API requirements.
-- **Waiting on you:** the Stage 1 sign-off, PR #1, and then the core schema
-  review. FD-31 is open for Stage 9, and Q-04, A-06 and A-07 for Stage 3.
+- **Waiting on you:** PR #1, and then the core schema review. FD-31 is open
+  for Stage 9, and Q-04, A-06 and A-07 for Stage 3.
 - **The code:** the 9 TypeScript projects of PRD 5.4, with the
   configuration, the database client and the migration runner, but no
   features yet. The phone app waits for Stage 9. CI is green on `dev`.
@@ -93,8 +97,8 @@ flowchart TD
 | Stage | Phase | Delivers | Work done | Ends at | Status |
 | --- | --- | --- | --- | --- | --- |
 | [0 Redesign the spec](#stage-0-redesign-the-spec) | — | The spec revised for the Flutter app and for no PWA | 13 of 13 | Spec accepted | Signed off 15 Oct 2026 |
-| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, and CI with PostgreSQL | 10 of 10 | CI green | Waiting for sign-off |
-| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 1 of 26 | Sign-in works | Not started |
+| [1 Foundations](#stage-1-foundations) | Before Phase 1 | The workspace's projects, the data layer, and CI with PostgreSQL | 10 of 10 | CI green | Signed off 15 Oct 2026 |
+| [2 Core platform](#stage-2-core-platform) | 1 | Sign-in, recovery, tokens, jobs, the module registry, the app shell and the palette | 1 of 26 | Sign-in works | In progress |
 | [3 Operations](#stage-3-operations) | 1 | The first deploy from CI, backups, alerts, the restore test, the System page, the full export and the restore runbook | 0 of 11 | Gate A | Not started |
 | [4 Fiscus specs and rules](#stage-4-fiscus-specs-and-rules) | 2 | The `fiscus` schema, API and contracts, the seed, every domain rule with its tests, and design Pass 2 | 0 of 14 | Rules proven | Not started |
 | [5 Ledger](#stage-5-ledger) | 2 | Accounts, transactions, review, trash and quick entry, on a computer and in the phone layout | 0 of 8 | Ledger works | Not started |
@@ -275,8 +279,12 @@ that features come before the host. The runbook and the unit stay drafted in
 
 ### Sign-off: CI
 
-- [ ] A boundary break or a committed secret fails CI (NFR-10)
-- [ ] CI finishes in 5 minutes or less for a one-project change (NFR-21)
+- [x] A boundary break or a committed secret fails CI (NFR-10). On 15 Oct
+      2026 a scratch branch where `domain` imported `pg` failed at "Check
+      module boundaries". Secrets are caught by `bun run secrets` and its
+      tests, which CI runs on every push
+- [x] CI finishes in 5 minutes or less for a one-project change (NFR-21).
+      A full run of all 9 projects took 46 s on 15 Oct 2026
 
 The three deploy checks moved to [Gate A](#gate-a) with the first deploy.
 
